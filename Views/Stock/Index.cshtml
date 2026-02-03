@@ -1,0 +1,310 @@
+@model IEnumerable<MaterialStock>
+@{
+    ViewData["Title"] = "المخزون";
+    ViewData["Subtitle"] = "إدارة المخزون حسب المواقع";
+}
+
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label">الموقع</label>
+                <select name="locationId" class="form-select">
+                    <option value="">جميع المواقع</option>
+                    @foreach (var loc in ViewBag.Locations as IEnumerable<Location>)
+                    {
+                        <option value="@loc.Id" selected="@(ViewBag.LocationId?.ToString() == loc.Id.ToString())">@loc.Name</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">الفئة</label>
+                <select name="categoryId" class="form-select">
+                    <option value="">جميع الفئات</option>
+                    @foreach (var cat in ViewBag.Categories as IEnumerable<Category>)
+                    {
+                        <option value="@cat.Id" selected="@(ViewBag.CategoryId?.ToString() == cat.Id.ToString())">@cat.Name</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">البحث</label>
+                <input type="text" name="searchTerm" class="form-control" value="@ViewBag.SearchTerm" placeholder="اسم أو رمز">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">&nbsp;</label>
+                <div class="d-flex flex-column gap-1">
+                    <div class="form-check form-check-inline">
+                        <input type="checkbox" name="lowStockOnly" value="true" class="form-check-input" id="lowStock" @(ViewBag.LowStockOnly == true ? "checked" : "")>
+                        <label class="form-check-label small" for="lowStock">مخزون منخفض</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input type="checkbox" name="expiringOnly" value="true" class="form-check-input" id="expiring" @(ViewBag.ExpiringOnly == true ? "checked" : "")>
+                        <label class="form-check-label small" for="expiring">ينتهي قريباً</label>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">&nbsp;</label>
+                <button type="submit" class="btn btn-primary w-100"><i class="fas fa-filter"></i> تصفية</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-2"><div class="card bg-primary text-white text-center p-3"><h4 class="mb-0">@ViewBag.TotalItems</h4><small>سجلات المخزون</small></div></div>
+    <div class="col-md-2"><div class="card bg-success text-white text-center p-3"><h4 class="mb-0">@ViewBag.TotalQuantity</h4><small>إجمالي الكمية</small></div></div>
+    <div class="col-md-2"><div class="card bg-info text-white text-center p-3"><h4 class="mb-0">@(((decimal)ViewBag.TotalValue).ToString("N0"))</h4><small>القيمة (د.ع)</small></div></div>
+    <div class="col-md-2"><div class="card bg-warning text-white text-center p-3"><h4 class="mb-0">@ViewBag.LowStockCount</h4><small>مخزون منخفض</small></div></div>
+    <div class="col-md-2"><div class="card bg-danger text-white text-center p-3"><h4 class="mb-0">@ViewBag.ExpiredCount</h4><small>منتهي الصلاحية</small></div></div>
+    <div class="col-md-2"><div class="card bg-secondary text-white text-center p-3"><h4 class="mb-0">@ViewBag.ExpiringCount</h4><small>ينتهي قريباً</small></div></div>
+</div>
+
+<div class="d-flex justify-content-between mb-3">
+    <span class="text-muted">@Model.Count() سجل</span>
+    <div>
+        <a asp-action="LowStock" class="btn btn-warning"><i class="fas fa-exclamation-triangle"></i> المخزون المنخفض</a>
+        <a asp-action="Expiring" class="btn btn-danger"><i class="fas fa-calendar-times"></i> ينتهي قريباً</a>
+        <a asp-action="Create" class="btn btn-primary"><i class="fas fa-plus"></i> إضافة مخزون</a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        @if (Model.Any())
+        {
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>الرمز</th>
+                            <th>المادة</th>
+                            <th>الفئة</th>
+                            <th>الموقع</th>
+                            <th>الكمية</th>
+                            <th>القيمة</th>
+                            <th>الحالة</th>
+                            <th>الصلاحية</th>
+                            <th>الإجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @{
+                            int i = 1;
+                        }
+                        @foreach (var stock in Model)
+                        {
+                            <tr class="@(stock.IsExpired ? "table-danger" : stock.IsExpiringSoon ? "table-warning" : stock.Quantity <= stock.Material.MinimumStock ? "table-warning" : "")">
+                                <td>@(i++)</td>
+                                <td><code>@stock.Material.Code</code></td>
+                                <td><a asp-controller="Materials" asp-action="Details" asp-route-id="@stock.MaterialId">@stock.Material.Name</a></td>
+                                <td>@stock.Material.Category?.Name</td>
+                                <td>@stock.Location.Name</td>
+                                <td>
+                                    @stock.Quantity @stock.Material.Unit
+                                    @if (stock.Quantity <= stock.Material.MinimumStock)
+                                    {
+                                        <i class="fas fa-exclamation-triangle text-warning" title="مخزون منخفض"></i>
+                                    }
+                                </td>
+                                <td>@stock.CurrentValue.ToString("N0")</td>
+                                <td><span class="badge @(stock.Condition == "جيدة" ? "bg-success" : "bg-secondary")">@stock.Condition</span></td>
+                                <td>
+                                    @if (stock.ExpiryDate.HasValue)
+                                    {
+                                        if (stock.IsExpired)
+                                        {
+                                            <span class="badge bg-danger">منتهي</span>
+                                        }
+                                        else if (stock.IsExpiringSoon)
+                                        {
+                                            <span class="badge bg-warning">@stock.ExpiryDate.Value.ToString("yyyy/MM/dd")</span>
+                                        }
+                                        else
+                                        {
+                                            <span>@stock.ExpiryDate.Value.ToString("yyyy/MM/dd")</span>
+                                        }
+                                    }
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <a asp-action="Details" asp-route-id="@stock.Id" class="btn btn-outline-info" title="عرض"><i class="fas fa-eye"></i></a>
+                                        <a asp-action="Adjust" asp-route-id="@stock.Id" class="btn btn-outline-warning" title="تعديل الكمية"><i class="fas fa-edit"></i></a>
+                                        <a asp-controller="Transfers" asp-action="Create" asp-route-materialId="@stock.MaterialId" asp-route-fromLocationId="@stock.LocationId" class="btn btn-outline-primary" title="نقل"><i class="fas fa-exchange-alt"></i></a>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="text-center py-5">
+                <i class="fas fa-boxes fa-4x text-muted mb-3"></i>
+                <h5>لا يوجد مخزون</h5>
+                <a asp-controller="Purchases" asp-action="Create" class="btn btn-primary"><i class="fas fa-shopping-cart"></i> تسجيل شراء</a>
+            </div>
+        }
+    </div>
+</div>
+
+@* @model List<MaterialStock>
+@{
+    ViewData["Title"] = "المخزون";
+    ViewData["Breadcrumb"] = "المخزون";
+}
+
+<div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <h1><i class="bi bi-boxes me-2"></i>المخزون</h1>
+    <div class="btn-group">
+        <a asp-action="LowStock" class="btn btn-warning"><i class="bi bi-exclamation-triangle me-1"></i>المنخفض (@ViewBag.LowStockCount)</a>
+        <a asp-action="Expiring" class="btn btn-danger"><i class="bi bi-clock me-1"></i>قرب الانتهاء (@ViewBag.ExpiringCount)</a>
+    </div>
+</div>
+
+<!-- Stats -->
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card text-center py-3">
+            <div class="text-primary fs-2 fw-bold">@ViewBag.TotalItems</div>
+            <div class="text-muted">عناصر المخزون</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-center py-3">
+            <div class="text-success fs-2 fw-bold">@ViewBag.TotalQuantity</div>
+            <div class="text-muted">إجمالي الكمية</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-center py-3">
+            <div class="text-warning fs-2 fw-bold">@(((decimal)ViewBag.TotalValue).ToString("N0"))</div>
+            <div class="text-muted">القيمة الإجمالية (د.ع)</div>
+        </div>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label">البحث</label>
+                <input type="text" name="searchTerm" class="form-control" value="@ViewBag.SearchTerm" placeholder="اسم أو رمز...">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">الموقع</label>
+                <select name="locationId" class="form-select">
+                    <option value="">الكل</option>
+                    @foreach (var loc in ViewBag.Locations as List<Location>)
+                    {
+                        <option value="@loc.Id" selected="@(ViewBag.LocationId != null && (int)ViewBag.LocationId == loc.Id)">@loc.Name</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">الفئة</label>
+                <select name="categoryId" class="form-select">
+                    <option value="">الكل</option>
+                    @foreach (var cat in ViewBag.Categories as List<Category>)
+                    {
+                        <option value="@cat.Id" selected="@(ViewBag.CategoryId != null && (int)ViewBag.CategoryId == cat.Id)">@cat.Name</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">الفلاتر</label>
+                <div class="d-flex gap-3">
+                    <div class="form-check">
+                        <input type="checkbox" name="lowStockOnly" value="true" class="form-check-input" @(ViewBag.LowStockOnly == true ? "checked" : "")>
+                        <label class="form-check-label">منخفض</label>
+                    </div>
+                    <div class="form-check">
+                        <input type="checkbox" name="expiringOnly" value="true" class="form-check-input" @(ViewBag.ExpiringOnly == true ? "checked" : "")>
+                        <label class="form-check-label">منتهي</label>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-secondary w-100"><i class="bi bi-search me-1"></i>بحث</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Results -->
+<div class="card">
+    <div class="card-body p-0">
+        @if (Model.Any())
+        {
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>المادة</th>
+                            <th>الموقع</th>
+                            <th>الكمية</th>
+                            <th>الحالة</th>
+                            <th>تاريخ الانتهاء</th>
+                            <th>القيمة</th>
+                            <th class="text-center">إجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var s in Model)
+                        {
+                            <tr class="@(s.Quantity <= s.Material.MinimumStock ? "table-warning" : "") @(s.IsExpired ? "table-danger" : "")">
+                                <td>
+                                    <a asp-controller="Materials" asp-action="Details" asp-route-id="@s.MaterialId">@s.Material.Name</a>
+                                    <br><small class="text-muted">@s.Material.Code</small>
+                                </td>
+                                <td>@s.Location.Name</td>
+                                <td>
+                                    <strong>@s.Quantity</strong> @s.Material.Unit
+                                    @if (s.Quantity <= s.Material.MinimumStock)
+                                    {
+                                        <span class="badge bg-warning">منخفض</span>
+                                    }
+                                </td>
+                                <td>@s.Condition</td>
+                                <td>
+                                    @if (s.ExpiryDate.HasValue)
+                                    {
+                                        <span class="@(s.IsExpired ? "text-danger fw-bold" : s.IsExpiringSoon ? "text-warning" : "")">
+                                            @s.ExpiryDate.Value.ToString("yyyy-MM-dd")
+                                        </span>
+                                        @if (s.IsExpired)
+                                        {
+                                            <span class="badge bg-danger">منتهي</span>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">-</span>
+                                    }
+                                </td>
+                                <td>@s.CurrentValue.ToString("N0")</td>
+                                <td class="text-center action-buttons">
+                                    <a asp-action="Details" asp-route-id="@s.Id" class="btn btn-sm btn-outline-info"><i class="bi bi-eye"></i></a>
+                                    <a asp-action="Adjust" asp-route-id="@s.Id" class="btn btn-sm btn-outline-warning"><i class="bi bi-sliders"></i></a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="text-center py-5 text-muted">
+                <i class="bi bi-inbox display-1"></i>
+                <p class="mt-3">لا توجد نتائج</p>
+            </div>
+        }
+    </div>
+</div>
+ *@

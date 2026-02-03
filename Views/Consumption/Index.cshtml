@@ -1,0 +1,389 @@
+@model ConsumptionListViewModel
+@{
+    ViewData["Title"] = "سجل الاستهلاك";
+    ViewData["Subtitle"] = "نموذج رقم (5) - المواد المستهلكة";
+}
+
+<!-- Filters -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-2">
+                <label class="form-label">السنة</label>
+                <select name="yearFilter" class="form-select">
+                    <option value="">الكل</option>
+                    @foreach (var y in Model.AvailableYears)
+                    {
+                        <option value="@y" selected="@(y == Model.YearFilter)">@y</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">القسم</label>
+                <select name="department" class="form-select">
+                    <option value="">جميع الأقسام</option>
+                    @foreach (var dept in Model.Departments)
+                    {
+                        <option value="@dept" selected="@(dept == Model.Department)">@dept</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">سبب الاستهلاك</label>
+                <select name="reasonFilter" class="form-select">
+                    <option value="">الكل</option>
+                    @foreach (ConsumptionReason reason in Enum.GetValues(typeof(ConsumptionReason)))
+                    {
+                        <option value="@((int)reason)" selected="@(reason == Model.ReasonFilter)">
+                            @GetReasonDisplayName(reason)
+                        </option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">قرار اللجنة</label>
+                <select name="decisionFilter" class="form-select">
+                    <option value="">الكل</option>
+                    @foreach (CommitteeDecision decision in Enum.GetValues(typeof(CommitteeDecision)))
+                    {
+                        <option value="@((int)decision)" selected="@(decision == Model.DecisionFilter)">
+                            @GetDecisionDisplayName(decision)
+                        </option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">البحث</label>
+                <input type="text" name="searchTerm" class="form-control" value="@Model.SearchTerm" placeholder="اسم أو رمز">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">&nbsp;</label>
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="fas fa-filter"></i> تصفية
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Statistics -->
+<div class="row mb-4">
+    <div class="col-md-2">
+        <div class="card bg-primary text-white text-center p-3">
+            <h4 class="mb-0">@Model.Statistics.TotalItems</h4>
+            <small>إجمالي السجلات</small>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card bg-info text-white text-center p-3">
+            <h4 class="mb-0">@Model.Statistics.TotalQuantity</h4>
+            <small>الكمية المستهلكة</small>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-danger text-white text-center p-3">
+            <h4 class="mb-0">@Model.Statistics.TotalOriginalValue.ToString("N0")</h4>
+            <small>القيمة الأصلية (د.ع)</small>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-white text-center p-3">
+            <h4 class="mb-0">@Model.Statistics.TotalResidualValue.ToString("N0")</h4>
+            <small>القيمة المتبقية (د.ع)</small>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card bg-success text-white text-center p-3">
+            <h4 class="mb-0">@Model.Statistics.ItemsDisposed</h4>
+            <small>تم التصرف</small>
+        </div>
+    </div>
+</div>
+
+<!-- Actions Bar -->
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <span class="text-muted">@Model.Records.Count سجل استهلاك</span>
+    </div>
+    <div class="btn-group">
+        <a asp-action="Create" class="btn btn-primary">
+            <i class="fas fa-plus"></i> إضافة سجل
+        </a>
+        <a asp-action="Report" class="btn btn-info" target="_blank">
+            <i class="fas fa-print"></i> طباعة
+        </a>
+    </div>
+</div>
+
+<!-- Consumption Table -->
+<div class="card">
+    <div class="card-body">
+        @if (Model.Records.Any())
+        {
+            <div class="table-responsive">
+                <table class="table table-hover table-sm">
+                    <thead class="table-light">
+                        <tr>
+                            <th>ت</th>
+                            <th>الرمز</th>
+                            <th>اسم المادة</th>
+                            <th>الكمية</th>
+                            <th>نسبة التلف</th>
+                            <th>السبب</th>
+                            <th>القرار</th>
+                            <th>القيمة الأصلية</th>
+                            <th>الخسارة</th>
+                            <th>التاريخ</th>
+                            <th>الحالة</th>
+                            <th>الإجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var record in Model.Records)
+                        {
+                            <tr class="@(record.IsDisposed ? "" : "table-warning")">
+                                <td>@record.SequenceNumber</td>
+                                <td><code>@record.MaterialCode</code></td>
+                                <td>
+                                    <a asp-action="Details" asp-route-id="@record.Id">@record.MaterialName</a>
+                                </td>
+                                <td>@record.ConsumedQuantity</td>
+                                <td>
+                                    @if (record.DamagePercentage.HasValue)
+                                    {
+                                        <span class="badge @(record.DamagePercentage >= 50 ? "bg-danger" : "bg-warning")">
+                                            @record.DamagePercentage%
+                                        </span>
+                                    }
+                                </td>
+                                <td>@GetReasonDisplayName(record.Reason)</td>
+                                <td>
+                                    <span class="badge @GetDecisionBadgeClass(record.Decision)">
+                                        @GetDecisionDisplayName(record.Decision)
+                                    </span>
+                                </td>
+                                <td>@record.StoredOriginalValue.ToString("N0")</td>
+                                <td class="text-danger">@record.LossValue.ToString("N0")</td>
+                                <td>@record.ReportDate.ToString("yyyy/MM/dd")</td>
+                                <td>
+                                    @if (record.IsDisposed)
+                                    {
+                                        <span class="badge bg-success">تم التصرف</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-warning">معلق</span>
+                                    }
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <a asp-action="Details" asp-route-id="@record.Id" class="btn btn-outline-info" title="عرض">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                    <tfoot class="table-light">
+                        <tr class="fw-bold">
+                            <td colspan="3">المجموع</td>
+                            <td>@Model.Statistics.TotalQuantity</td>
+                            <td colspan="3"></td>
+                            <td>@Model.Statistics.TotalOriginalValue.ToString("N0")</td>
+                            <td class="text-danger">@((Model.Statistics.TotalOriginalValue - Model.Statistics.TotalResidualValue).ToString("N0"))</td>
+                            <td colspan="3"></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="text-center py-5">
+                <i class="fas fa-file-invoice fa-4x text-muted mb-3"></i>
+                <h5>لا توجد سجلات استهلاك</h5>
+                <p class="text-muted">يمكنك إضافة سجل استهلاك جديد من سجلات الجرد</p>
+                <a asp-controller="Inventory" asp-action="Index" class="btn btn-primary">
+                    <i class="fas fa-clipboard-list"></i> الذهاب للجرد
+                </a>
+            </div>
+        }
+    </div>
+</div>
+
+@functions {
+    string GetReasonDisplayName(ConsumptionReason reason) => reason switch
+    {
+        ConsumptionReason.NormalUse => "استخدام اعتيادي",
+        ConsumptionReason.RegularUse => "جراء الاستعمال",
+        ConsumptionReason.Obsolescence => "القدم",
+        ConsumptionReason.TechnicalFailure => "عطل فني",
+        ConsumptionReason.NegligenceByOfficials => "تقصير المسؤولين",
+        ConsumptionReason.Accident => "حادث",
+        ConsumptionReason.Misuse => "سوء استخدام",
+        ConsumptionReason.ExternalFactors => "عوامل خارجية",
+        ConsumptionReason.EndOfLife => "انتهاء العمر الافتراضي",
+        ConsumptionReason.Other => "أخرى",
+        _ => reason.ToString()
+    };
+
+    string GetDecisionDisplayName(CommitteeDecision decision) => decision switch
+    {
+        CommitteeDecision.UnderReview => "قيد المراجعة",
+        CommitteeDecision.FullReuse => "إعادة استعمال كلي",
+        CommitteeDecision.PartialReuse => "إعادة استعمال جزئي",
+        CommitteeDecision.Sell => "بيع",
+        CommitteeDecision.Dispose => "إتلاف",
+        CommitteeDecision.Repair => "إصلاح",
+        CommitteeDecision.Scrap => "تحويل للخردة",
+        _ => decision.ToString()
+    };
+
+    string GetDecisionBadgeClass(CommitteeDecision decision) => decision switch
+    {
+        CommitteeDecision.Sell or CommitteeDecision.Dispose or CommitteeDecision.Scrap => "bg-success",
+        CommitteeDecision.UnderReview => "bg-warning",
+        _ => "bg-secondary"
+    };
+}
+
+
+@* @model ConsumptionListViewModel
+@{
+    ViewData["Title"] = "الاستهلاك (نموذج 5)";
+    ViewData["Breadcrumb"] = "الاستهلاك";
+}
+
+<div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <h1><i class="bi bi-trash3 me-2"></i>الاستهلاك - نموذج رقم (5)</h1>
+    <a asp-action="Create" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i>إضافة سجل</a>
+</div>
+
+<!-- Stats -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3"><div class="card text-center py-3"><div class="fs-2 fw-bold text-primary">@Model.Statistics.TotalItems</div><div class="text-muted">سجلات الاستهلاك</div></div></div>
+    <div class="col-md-3"><div class="card text-center py-3"><div class="fs-2 fw-bold text-danger">@Model.Statistics.TotalQuantity</div><div class="text-muted">إجمالي الكمية</div></div></div>
+    <div class="col-md-3"><div class="card text-center py-3"><div class="fs-2 fw-bold text-warning">@Model.Statistics.TotalLoss.ToString("N0")</div><div class="text-muted">الخسارة (د.ع)</div></div></div>
+    <div class="col-md-3"><div class="card text-center py-3"><div class="fs-2 fw-bold text-success">@Model.Statistics.ItemsDisposed</div><div class="text-muted">تم التصرف</div></div></div>
+</div>
+
+<!-- Filters -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-2">
+                <label class="form-label">السنة</label>
+                <select name="year" class="form-select">
+                    <option value="">الكل</option>
+                    @foreach (var y in Model.AvailableYears)
+                    {
+                        <option value="@y" selected="@(Model.YearFilter == y)">@y</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">السبب</label>
+                <select name="reason" class="form-select" asp-items="Html.GetEnumSelectList<ConsumptionReason>()">
+                    <option value="">الكل</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">القرار</label>
+                <select name="decision" class="form-select" asp-items="Html.GetEnumSelectList<CommitteeDecision>()">
+                    <option value="">الكل</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">التصرف</label>
+                <select name="isDisposed" class="form-select">
+                    <option value="">الكل</option>
+                    <option value="true" selected="@(Model.IsDisposedFilter == true)">تم التصرف</option>
+                    <option value="false" selected="@(Model.IsDisposedFilter == false)">معلق</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">القسم</label>
+                <select name="department" class="form-select">
+                    <option value="">الكل</option>
+                    @foreach (var d in Model.Departments)
+                    {
+                        <option value="@d" selected="@(Model.Department == d)">@d</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-secondary w-100"><i class="bi bi-search me-1"></i>بحث</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Results -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between">
+        <span>سجلات الاستهلاك</span>
+        <a asp-action="Report" class="btn btn-sm btn-outline-primary"><i class="bi bi-printer me-1"></i>طباعة التقرير</a>
+    </div>
+    <div class="card-body p-0">
+        @if (Model.Records.Any())
+        {
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>التاريخ</th>
+                            <th>المادة</th>
+                            <th>الكمية</th>
+                            <th>السبب</th>
+                            <th>القرار</th>
+                            <th>القيمة الأصلية</th>
+                            <th>القيمة المتبقية</th>
+                            <th>الحالة</th>
+                            <th class="text-center">إجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var c in Model.Records)
+                        {
+                            <tr class="@(c.IsDisposed ? "" : "table-warning")">
+                                <td>@c.ReportDate.ToString("yyyy-MM-dd")</td>
+                                <td>@c.InventoryRecord?.Material?.Name</td>
+                                <td>@c.ConsumedQuantity</td>
+                                <td><span class="badge bg-secondary">@c.Reason</span></td>
+                                <td><span class="badge bg-info">@c.Decision</span></td>
+                                <td>@c.OriginalValue.ToString("N0")</td>
+                                <td>@c.ResidualValue.ToString("N0")</td>
+                                <td>
+                                    @if (c.IsDisposed)
+                                    {
+                                        <span class="badge bg-success">تم التصرف</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-warning">معلق</span>
+                                    }
+                                </td>
+                                <td class="text-center action-buttons">
+                                    <a asp-action="Details" asp-route-id="@c.Id" class="btn btn-sm btn-outline-info"><i class="bi bi-eye"></i></a>
+                                    @if (!c.IsDisposed)
+                                    {
+                                        <a asp-action="ProcessDecision" asp-route-id="@c.Id" class="btn btn-sm btn-outline-success" title="تنفيذ القرار"><i class="bi bi-check-lg"></i></a>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="text-center py-5 text-muted">
+                <i class="bi bi-inbox display-1"></i>
+                <p class="mt-3">لا توجد سجلات استهلاك</p>
+            </div>
+        }
+    </div>
+</div>
+ *@

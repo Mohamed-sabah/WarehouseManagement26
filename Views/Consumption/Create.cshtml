@@ -1,0 +1,86 @@
+@model ConsumptionCreateEditViewModel
+@{
+    ViewData["Title"] = "إضافة سجل استهلاك";
+    ViewData["Breadcrumb"] = "استهلاك جديد";
+}
+
+<div class="page-header"><h1><i class="bi bi-trash3 me-2"></i>إضافة سجل استهلاك</h1></div>
+
+<div class="card">
+    <div class="card-body">
+        <form asp-action="Create" method="post">
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label asp-for="Record.InventoryRecordId" class="form-label">سجل الجرد <span class="text-danger">*</span></label>
+                    <select asp-for="Record.InventoryRecordId" class="form-select">
+                        <option value="">-- اختر سجل الجرد --</option>
+                        @foreach (var r in Model.AvailableInventoryRecords)
+                        {
+                            <option value="@r.Id">@r.MaterialName (@r.MaterialCode) - متاح: @r.AvailableQuantity</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label asp-for="Record.ConsumedQuantity" class="form-label">الكمية المستهلكة <span class="text-danger">*</span></label>
+                    <input asp-for="Record.ConsumedQuantity" class="form-control" type="number" min="1" />
+                </div>
+                <div class="col-md-3">
+                    <label asp-for="Record.ReportDate" class="form-label">تاريخ التقرير</label>
+                    <input asp-for="Record.ReportDate" class="form-control" type="date" />
+                </div>
+            </div>
+
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <label asp-for="Record.Reason" class="form-label">سبب الاستهلاك</label>
+                    <select asp-for="Record.Reason" asp-items="Html.GetEnumSelectList<ConsumptionReason>()" class="form-select"></select>
+                </div>
+                <div class="col-md-4">
+                    <label asp-for="Record.Decision" class="form-label">قرار اللجنة</label>
+                    <select asp-for="Record.Decision" asp-items="Html.GetEnumSelectList<CommitteeDecision>()" class="form-select"></select>
+                </div>
+                <div class="col-md-4">
+                    <label asp-for="Record.DamagePercentage" class="form-label">نسبة التلف %</label>
+                    <input asp-for="Record.DamagePercentage" class="form-control" type="number" min="0" max="100" step="0.1" />
+                </div>
+            </div>
+
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label asp-for="Record.ReasonDescription" class="form-label">وصف السبب</label>
+                    <textarea asp-for="Record.ReasonDescription" class="form-control" rows="2"></textarea>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="Record.DecisionNotes" class="form-label">ملاحظات القرار</label>
+                    <textarea asp-for="Record.DecisionNotes" class="form-control" rows="2"></textarea>
+                </div>
+            </div>
+
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <label asp-for="Record.StoredResidualValue" class="form-label">القيمة المتبقية</label>
+                    <div class="input-group">
+                        <input asp-for="Record.StoredResidualValue" class="form-control" type="number" step="0.01" min="0" />
+                        <span class="input-group-text">د.ع</span>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="form-check mt-4">
+                        <input type="checkbox" asp-for="DeductFromStockAutomatically" class="form-check-input" checked>
+                        <label asp-for="DeductFromStockAutomatically" class="form-check-label">خصم من المخزون تلقائياً</label>
+                    </div>
+                </div>
+            </div>
+
+            <hr>
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i>حفظ</button>
+                <a asp-action="Index" class="btn btn-secondary">إلغاء</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

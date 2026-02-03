@@ -1,0 +1,517 @@
+@model DashboardViewModel
+@{
+    ViewData["Title"] = "لوحة التحكم";
+    ViewData["Subtitle"] = "نظرة عامة على المخازن";
+}
+
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="stat-card primary">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h3 class="mb-0">@Model.TotalMaterials</h3>
+                    <small>إجمالي المواد</small>
+                </div>
+                <i class="fas fa-cubes fa-2x opacity-50"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="stat-card success">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h3 class="mb-0">@Model.TotalLocations</h3>
+                    <small>المواقع</small>
+                </div>
+                <i class="fas fa-map-marker-alt fa-2x opacity-50"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="stat-card warning">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h3 class="mb-0">@Model.LowStockItems</h3>
+                    <small>مخزون منخفض</small>
+                </div>
+                <i class="fas fa-exclamation-triangle fa-2x opacity-50"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="stat-card info">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h3 class="mb-0">@Model.TotalValue.ToString("N0")</h3>
+                    <small>القيمة الإجمالية (د.ع)</small>
+                </div>
+                <i class="fas fa-coins fa-2x opacity-50"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Stats Row -->
+<div class="row mb-4">
+    <div class="col-md-2 mb-2">
+        <div class="card text-center p-3">
+            <i class="fas fa-tags fa-2x text-primary mb-2"></i>
+            <h5>@Model.TotalCategories</h5>
+            <small class="text-muted">الفئات</small>
+        </div>
+    </div>
+    <div class="col-md-2 mb-2">
+        <div class="card text-center p-3">
+            <i class="fas fa-clipboard-list fa-2x text-success mb-2"></i>
+            <h5>@Model.TotalInventoryRecords</h5>
+            <small class="text-muted">سجلات الجرد</small>
+        </div>
+    </div>
+    <div class="col-md-2 mb-2">
+        <div class="card text-center p-3">
+            <i class="fas fa-file-invoice fa-2x text-info mb-2"></i>
+            <h5>@Model.TotalConsumptionRecords</h5>
+            <small class="text-muted">سجلات الاستهلاك</small>
+        </div>
+    </div>
+    <div class="col-md-2 mb-2">
+        <div class="card text-center p-3">
+            <i class="fas fa-exchange-alt fa-2x text-warning mb-2"></i>
+            <h5>@Model.PendingTransfers</h5>
+            <small class="text-muted">نقل معلق</small>
+        </div>
+    </div>
+    <div class="col-md-2 mb-2">
+        <div class="card text-center p-3">
+            <i class="fas fa-calendar-times fa-2x text-danger mb-2"></i>
+            <h5>@Model.ExpiringItems</h5>
+            <small class="text-muted">ينتهي قريباً</small>
+        </div>
+    </div>
+    <div class="col-md-2 mb-2">
+        <a asp-controller="Materials" asp-action="Create" class="card text-center p-3 text-decoration-none">
+            <i class="fas fa-plus-circle fa-2x text-success mb-2"></i>
+            <h6 class="mb-0">إضافة مادة</h6>
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Critical Items -->
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="fas fa-exclamation-circle text-danger me-2"></i>العناصر الحرجة</span>
+                <a asp-controller="Stock" asp-action="LowStock" class="btn btn-sm btn-outline-danger">عرض الكل</a>
+            </div>
+            <div class="card-body">
+                @if (Model.CriticalItems?.Any() == true)
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover table-sm">
+                            <thead>
+                                <tr>
+                                    <th>المادة</th>
+                                    <th>الموقع</th>
+                                    <th>الكمية</th>
+                                    <th>الحالة</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var item in Model.CriticalItems.Take(5))
+                                {
+                                    <tr>
+                                        <td>@item.Material.Name</td>
+                                        <td>@item.Location.Name</td>
+                                        <td>@item.Quantity</td>
+                                        <td>
+                                            @if (item.IsExpired)
+                                            {
+                                                <span class="badge bg-danger">منتهي</span>
+                                            }
+                                            else if (item.IsExpiringSoon)
+                                            {
+                                                <span class="badge bg-warning">ينتهي قريباً</span>
+                                            }
+                                            else if (item.Quantity <= item.Material.MinimumStock)
+                                            {
+                                                <span class="badge bg-danger">مخزون منخفض</span>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center text-muted py-4">
+                        <i class="fas fa-check-circle fa-3x mb-3 text-success"></i>
+                        <p>لا توجد عناصر حرجة</p>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Purchases -->
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="fas fa-shopping-cart text-primary me-2"></i>آخر المشتريات</span>
+                <a asp-controller="Purchases" asp-action="Index" class="btn btn-sm btn-outline-primary">عرض الكل</a>
+            </div>
+            <div class="card-body">
+                @if (Model.RecentPurchases?.Any() == true)
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover table-sm">
+                            <thead>
+                                <tr>
+                                    <th>المادة</th>
+                                    <th>الكمية</th>
+                                    <th>السعر</th>
+                                    <th>التاريخ</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var purchase in Model.RecentPurchases)
+                                {
+                                    <tr>
+                                        <td>@purchase.Material.Name</td>
+                                        <td>@purchase.Quantity</td>
+                                        <td>@purchase.TotalPrice.ToString("N0")</td>
+                                        <td>@purchase.PurchaseDate.ToString("MM/dd")</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center text-muted py-4">
+                        <i class="fas fa-inbox fa-3x mb-3"></i>
+                        <p>لا توجد مشتريات حديثة</p>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Recent Transfers -->
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="fas fa-exchange-alt text-info me-2"></i>آخر عمليات النقل</span>
+                <a asp-controller="Transfers" asp-action="Index" class="btn btn-sm btn-outline-info">عرض الكل</a>
+            </div>
+            <div class="card-body">
+                @if (Model.RecentTransfers?.Any() == true)
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover table-sm">
+                            <thead>
+                                <tr>
+                                    <th>المادة</th>
+                                    <th>من</th>
+                                    <th>إلى</th>
+                                    <th>الحالة</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var transfer in Model.RecentTransfers)
+                                {
+                                    <tr>
+                                        <td>@transfer.Material.Name</td>
+                                        <td>@transfer.FromLocation.Name</td>
+                                        <td>@transfer.ToLocation.Name</td>
+                                        <td>
+                                            @if (transfer.IsExecuted)
+                                            {
+                                                <span class="badge bg-success">منفذ</span>
+                                            }
+                                            else if (transfer.IsConfirmed)
+                                            {
+                                                <span class="badge bg-warning">مؤكد</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-secondary">معلق</span>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center text-muted py-4">
+                        <i class="fas fa-inbox fa-3x mb-3"></i>
+                        <p>لا توجد عمليات نقل حديثة</p>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <i class="fas fa-bolt text-warning me-2"></i>إجراءات سريعة
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-6">
+                        <a asp-controller="Materials" asp-action="Create" class="btn btn-outline-primary w-100 py-3">
+                            <i class="fas fa-plus-circle mb-2 d-block fa-2x"></i>
+                            إضافة مادة
+                        </a>
+                    </div>
+                    <div class="col-6">
+                        <a asp-controller="Purchases" asp-action="Create" class="btn btn-outline-success w-100 py-3">
+                            <i class="fas fa-shopping-cart mb-2 d-block fa-2x"></i>
+                            تسجيل شراء
+                        </a>
+                    </div>
+                    <div class="col-6">
+                        <a asp-controller="Inventory" asp-action="StartBulkInventory" class="btn btn-outline-info w-100 py-3">
+                            <i class="fas fa-clipboard-list mb-2 d-block fa-2x"></i>
+                            بدء الجرد
+                        </a>
+                    </div>
+                    <div class="col-6">
+                        <a asp-controller="Transfers" asp-action="Create" class="btn btn-outline-warning w-100 py-3">
+                            <i class="fas fa-exchange-alt mb-2 d-block fa-2x"></i>
+                            نقل مادة
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // يمكن إضافة رسوم بيانية هنا باستخدام Chart.js
+    </script>
+}
+
+
+
+@* @model DashboardViewModel
+@{
+    ViewData["Title"] = "لوحة التحكم";
+    ViewData["Breadcrumb"] = "لوحة التحكم";
+}
+
+<div class="page-header d-flex justify-content-between align-items-center">
+    <h1><i class="bi bi-speedometer2 me-2"></i>لوحة التحكم</h1>
+    <span class="text-muted">آخر تحديث: @DateTime.Now.ToString("HH:mm")</span>
+</div>
+
+<!-- Stats Cards -->
+<div class="row g-4 mb-4">
+    <div class="col-md-6 col-lg-3">
+        <div class="card stat-card primary">
+            <div class="stat-icon"><i class="bi bi-box"></i></div>
+            <div class="stat-value">@Model.TotalMaterials</div>
+            <div class="stat-label">إجمالي المواد</div>
+        </div>
+    </div>
+    <div class="col-md-6 col-lg-3">
+        <div class="card stat-card success">
+            <div class="stat-icon"><i class="bi bi-geo-alt"></i></div>
+            <div class="stat-value">@Model.TotalLocations</div>
+            <div class="stat-label">المواقع</div>
+        </div>
+    </div>
+    <div class="col-md-6 col-lg-3">
+        <div class="card stat-card warning">
+            <div class="stat-icon"><i class="bi bi-exclamation-triangle"></i></div>
+            <div class="stat-value">@Model.LowStockItems</div>
+            <div class="stat-label">مخزون منخفض</div>
+        </div>
+    </div>
+    <div class="col-md-6 col-lg-3">
+        <div class="card stat-card danger">
+            <div class="stat-icon"><i class="bi bi-clock-history"></i></div>
+            <div class="stat-value">@Model.ExpiringItems</div>
+            <div class="stat-label">قرب انتهاء الصلاحية</div>
+        </div>
+    </div>
+</div>
+
+<!-- Value Card -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body text-center py-4">
+                <h5 class="text-muted mb-2">القيمة الإجمالية للمخزون</h5>
+                <h2 class="text-primary mb-0">@Model.TotalValue.ToString("N0") <small class="text-muted fs-5">د.ع</small></h2>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Recent Purchases -->
+    <div class="col-lg-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-cart-plus me-2"></i>آخر المشتريات</span>
+                <a asp-controller="Purchases" asp-action="Index" class="btn btn-sm btn-outline-primary">عرض الكل</a>
+            </div>
+            <div class="card-body p-0">
+                @if (Model.RecentPurchases?.Any() == true)
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>المادة</th>
+                                    <th>الكمية</th>
+                                    <th>التاريخ</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var p in Model.RecentPurchases)
+                                {
+                                    <tr>
+                                        <td>@p.Material?.Name</td>
+                                        <td>@p.Quantity</td>
+                                        <td>@p.PurchaseDate.ToString("yyyy-MM-dd")</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center py-4 text-muted">لا توجد مشتريات حديثة</div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Transfers -->
+    <div class="col-lg-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-arrow-left-right me-2"></i>آخر عمليات النقل</span>
+                <a asp-controller="Transfers" asp-action="Index" class="btn btn-sm btn-outline-primary">عرض الكل</a>
+            </div>
+            <div class="card-body p-0">
+                @if (Model.RecentTransfers?.Any() == true)
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>المادة</th>
+                                    <th>من</th>
+                                    <th>إلى</th>
+                                    <th>الحالة</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var t in Model.RecentTransfers)
+                                {
+                                    <tr>
+                                        <td>@t.Material?.Name</td>
+                                        <td>@t.FromLocation?.Name</td>
+                                        <td>@t.ToLocation?.Name</td>
+                                        <td>
+                                            @if (t.IsExecuted)
+                                            {
+                                                <span class="badge bg-success">منفذ</span>
+                                            }
+                                            else if (t.IsConfirmed)
+                                            {
+                                                <span class="badge bg-info">مؤكد</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-warning">معلق</span>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center py-4 text-muted">لا توجد عمليات نقل حديثة</div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Critical Items -->
+@if (Model.CriticalItems?.Any() == true)
+{
+    <div class="card">
+        <div class="card-header bg-danger text-white">
+            <i class="bi bi-exclamation-octagon me-2"></i>عناصر تحتاج انتباه
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>المادة</th>
+                            <th>الموقع</th>
+                            <th>الكمية</th>
+                            <th>الحد الأدنى</th>
+                            <th>تاريخ الانتهاء</th>
+                            <th>الحالة</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var s in Model.CriticalItems)
+                        {
+                            <tr>
+                                <td>
+                                    <a asp-controller="Materials" asp-action="Details" asp-route-id="@s.MaterialId">
+                                        @s.Material?.Name
+                                    </a>
+                                </td>
+                                <td>@s.Location?.Name</td>
+                                <td>@s.Quantity</td>
+                                <td>@s.Material?.MinimumStock</td>
+                                <td>@(s.ExpiryDate?.ToString("yyyy-MM-dd") ?? "-")</td>
+                                <td>
+                                    @if (s.IsExpired)
+                                    {
+                                        <span class="badge bg-danger">منتهي الصلاحية</span>
+                                    }
+                                    else if (s.IsExpiringSoon)
+                                    {
+                                        <span class="badge bg-warning">قرب الانتهاء</span>
+                                    }
+                                    else if (s.Quantity <= s.Material?.MinimumStock)
+                                    {
+                                        <span class="badge bg-danger">مخزون منخفض</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+}
+ *@

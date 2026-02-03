@@ -1,0 +1,200 @@
+@model MaterialDetailsViewModel
+@{
+    ViewData["Title"] = Model.Material.Name;
+    ViewData["Breadcrumb"] = "تفاصيل المادة";
+}
+
+<div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <div>
+        <h1><i class="bi bi-box me-2"></i>@Model.Material.Name</h1>
+        <p class="text-muted mb-0"><code>@Model.Material.Code</code> | @Model.Material.Category?.Name</p>
+    </div>
+    <div class="btn-group">
+        <a asp-action="Edit" asp-route-id="@Model.Material.Id" class="btn btn-warning">
+            <i class="bi bi-pencil me-1"></i>تعديل
+        </a>
+        <a asp-controller="Purchases" asp-action="Create" asp-route-materialId="@Model.Material.Id" class="btn btn-success">
+            <i class="bi bi-cart-plus me-1"></i>شراء جديد
+        </a>
+        <a asp-action="Delete" asp-route-id="@Model.Material.Id" class="btn btn-danger">
+            <i class="bi bi-trash me-1"></i>حذف
+        </a>
+    </div>
+</div>
+
+<!-- Summary Cards -->
+<div class="row g-4 mb-4">
+    <div class="col-md-3">
+        <div class="card stat-card primary">
+            <div class="stat-icon"><i class="bi bi-boxes"></i></div>
+            <div class="stat-value">@Model.TotalQuantity</div>
+            <div class="stat-label">إجمالي الكمية</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card success">
+            <div class="stat-icon"><i class="bi bi-cash"></i></div>
+            <div class="stat-value">@Model.Material.AveragePrice.ToString("N0")</div>
+            <div class="stat-label">متوسط السعر</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card warning">
+            <div class="stat-icon"><i class="bi bi-calculator"></i></div>
+            <div class="stat-value">@Model.TotalValue.ToString("N0")</div>
+            <div class="stat-label">القيمة الإجمالية (د.ع)</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card @(Model.Material.IsLowStock ? "danger" : "success")">
+            <div class="stat-icon"><i class="bi bi-@(Model.Material.IsLowStock ? "exclamation-triangle" : "check-circle")"></i></div>
+            <div class="stat-value">@(Model.Material.IsLowStock ? "منخفض" : "جيد")</div>
+            <div class="stat-label">حالة المخزون</div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Material Info -->
+    <div class="col-lg-4 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <i class="bi bi-info-circle me-2"></i>معلومات المادة
+            </div>
+            <div class="card-body">
+                <table class="table table-borderless">
+                    <tr><th>الرمز:</th><td><code>@Model.Material.Code</code></td></tr>
+                    <tr><th>الفئة:</th><td>@(Model.Material.Category?.Name ?? "-")</td></tr>
+                    <tr><th>الوحدة:</th><td>@Model.Material.Unit</td></tr>
+                    <tr><th>الحد الأدنى:</th><td>@Model.Material.MinimumStock</td></tr>
+                    <tr><th>تاريخ الإضافة:</th><td>@Model.Material.CreatedDate.ToString("yyyy-MM-dd")</td></tr>
+                </table>
+                @if (!string.IsNullOrEmpty(Model.Material.Description))
+                {
+                    <hr>
+                    <h6>الوصف:</h6>
+                    <p class="text-muted">@Model.Material.Description</p>
+                }
+                @if (!string.IsNullOrEmpty(Model.Material.Specifications))
+                {
+                    <h6>المواصفات:</h6>
+                    <p class="text-muted">@Model.Material.Specifications</p>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Stock by Location -->
+    <div class="col-lg-8 mb-4">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-geo-alt me-2"></i>المخزون حسب الموقع</span>
+                <span class="badge bg-primary">@Model.LocationsCount مواقع</span>
+            </div>
+            <div class="card-body p-0">
+                @if (Model.Stocks.Any())
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>الموقع</th>
+                                    <th>الكمية</th>
+                                    <th>الحالة</th>
+                                    <th>تاريخ الانتهاء</th>
+                                    <th>القيمة</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var stock in Model.Stocks)
+                                {
+                                    <tr>
+                                        <td>
+                                            <a asp-controller="Locations" asp-action="Details" asp-route-id="@stock.LocationId">
+                                                @stock.Location?.Name
+                                            </a>
+                                        </td>
+                                        <td>@stock.Quantity</td>
+                                        <td>@stock.Condition</td>
+                                        <td>
+                                            @if (stock.ExpiryDate.HasValue)
+                                            {
+                                                <span class="@(stock.IsExpired ? "text-danger" : stock.IsExpiringSoon ? "text-warning" : "")">
+                                                    @stock.ExpiryDate.Value.ToString("yyyy-MM-dd")
+                                                </span>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">-</span>
+                                            }
+                                        </td>
+                                        <td>@stock.CurrentValue.ToString("N0")</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center py-4 text-muted">
+                        <i class="bi bi-inbox display-4"></i>
+                        <p class="mt-2">لا يوجد مخزون حالياً</p>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Purchases -->
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-cart-plus me-2"></i>آخر المشتريات</span>
+        <a asp-controller="Purchases" asp-action="Index" asp-route-materialId="@Model.Material.Id" class="btn btn-sm btn-outline-primary">
+            عرض الكل (@Model.PurchasesCount)
+        </a>
+    </div>
+    <div class="card-body p-0">
+        @if (Model.RecentPurchases.Any())
+        {
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>التاريخ</th>
+                            <th>الموقع</th>
+                            <th>الكمية</th>
+                            <th>سعر الوحدة</th>
+                            <th>الإجمالي</th>
+                            <th>الطريقة</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var p in Model.RecentPurchases)
+                        {
+                            <tr>
+                                <td>@p.PurchaseDate.ToString("yyyy-MM-dd")</td>
+                                <td>@p.Location?.Name</td>
+                                <td>@p.Quantity</td>
+                                <td>@p.UnitPrice.ToString("N0")</td>
+                                <td>@p.TotalPrice.ToString("N0")</td>
+                                <td><span class="badge bg-secondary">@p.Method</span></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="text-center py-4 text-muted">لا توجد مشتريات مسجلة</div>
+        }
+    </div>
+</div>
+
+<div class="mb-3">
+    <a asp-action="Index" class="btn btn-secondary">
+        <i class="bi bi-arrow-right me-1"></i>العودة للقائمة
+    </a>
+</div>

@@ -1,0 +1,62 @@
+@model List<Location>
+@{
+    ViewData["Title"] = "المواقع";
+    ViewData["Breadcrumb"] = "المواقع";
+}
+
+<div class="page-header d-flex justify-content-between align-items-center">
+    <h1><i class="bi bi-geo-alt me-2"></i>المواقع</h1>
+    <a asp-action="Create" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i>إضافة موقع</a>
+</div>
+
+<div class="card">
+    <div class="card-body p-0">
+        @if (Model.Any())
+        {
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>الرمز</th>
+                            <th>الاسم</th>
+                            <th>النوع</th>
+                            <th>عدد المواد</th>
+                            <th>إجمالي الكمية</th>
+                            <th class="text-center">إجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var loc in Model)
+                        {
+                            <tr>
+                                <td><code>@loc.Code</code></td>
+                                <td><a asp-action="Details" asp-route-id="@loc.Id">@loc.Name</a></td>
+                                <td><span class="badge bg-secondary">@loc.Type</span></td>
+                                <td>@loc.Stocks.Count(s => s.Quantity > 0)</td>
+                                <td>@loc.Stocks.Sum(s => s.Quantity)</td>
+                                <td class="text-center action-buttons">
+@*                                     <a asp-action="Details" asp-route-id="@loc.Id" class="btn btn-sm btn-outline-info"><i class="bi bi-eye"></i></a>
+                                    <a asp-action="Edit" asp-route-id="@loc.Id" class="btn btn-sm btn-outline-warning"><i class="bi bi-pencil"></i></a>
+                                    <a asp-action="Delete" asp-route-id="@loc.Id" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></a> *@
+
+                                    <a asp-action="Details" asp-route-id="@loc.Id" class="btn btn-outline-info"><i class="fas fa-eye"></i></a>
+                                    <a asp-action="Edit" asp-route-id="@loc.Id" class="btn btn-outline-warning"><i class="fas fa-edit"></i></a>
+                                    <a asp-action="Delete" asp-route-id="@loc.Id" class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></a>
+                                    <a asp-controller="Stock" asp-action="LocationReport" asp-route-id="@loc.Id" class="btn btn-outline-primary" title="تقرير المخزون"><i class="fas fa-chart-bar"></i></a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="text-center py-5">
+                <i class="bi bi-inbox display-1 text-muted"></i>
+                <p class="mt-3">لا توجد مواقع</p>
+                <a asp-action="Create" class="btn btn-primary">إضافة موقع</a>
+            </div>
+        }
+    </div>
+</div>

@@ -1,0 +1,78 @@
+@model InventoryCreateEditViewModel
+@{
+    ViewData["Title"] = "إضافة سجل جرد";
+    ViewData["Breadcrumb"] = "جرد جديد";
+}
+
+<div class="page-header"><h1><i class="bi bi-clipboard-plus me-2"></i>إضافة سجل جرد</h1></div>
+
+<div class="card">
+    <div class="card-body">
+        <form asp-action="Create" method="post">
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label asp-for="Record.MaterialId" class="form-label">المادة <span class="text-danger">*</span></label>
+                    <select asp-for="Record.MaterialId" class="form-select">
+                        <option value="">-- اختر المادة --</option>
+                        @foreach (var m in Model.Materials)
+                        {
+                            <option value="@m.Id">@m.Name (@m.Code)</option>
+                        }
+                    </select>
+                    <span asp-validation-for="Record.MaterialId" class="text-danger"></span>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="Record.LocationId" class="form-label">الموقع <span class="text-danger">*</span></label>
+                    <select asp-for="Record.LocationId" class="form-select">
+                        <option value="">-- اختر الموقع --</option>
+                        @foreach (var l in Model.Locations)
+                        {
+                            <option value="@l.Id">@l.Name</option>
+                        }
+                    </select>
+                </div>
+            </div>
+
+            <div class="row mb-3">
+                <div class="col-md-3">
+                    <label asp-for="Record.Year" class="form-label">السنة</label>
+                    <input asp-for="Record.Year" class="form-control" type="number" />
+                </div>
+                <div class="col-md-3">
+                    <label asp-for="Record.InventoryDate" class="form-label">تاريخ الجرد</label>
+                    <input asp-for="Record.InventoryDate" class="form-control" type="date" />
+                </div>
+                <div class="col-md-3">
+                    <label asp-for="Record.ActualQuantity" class="form-label">الكمية الفعلية <span class="text-danger">*</span></label>
+                    <input asp-for="Record.ActualQuantity" class="form-control" type="number" min="0" />
+                </div>
+                <div class="col-md-3">
+                    <label asp-for="Record.Condition" class="form-label">الحالة</label>
+                    <select asp-for="Record.Condition" asp-items="Html.GetEnumSelectList<MaterialCondition>()" class="form-select"></select>
+                </div>
+            </div>
+
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label asp-for="Record.Department" class="form-label">القسم/الدائرة</label>
+                    <input asp-for="Record.Department" class="form-control" />
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Record.Notes" class="form-label">ملاحظات</label>
+                <textarea asp-for="Record.Notes" class="form-control" rows="2"></textarea>
+            </div>
+
+            <hr>
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i>حفظ</button>
+                <a asp-action="Index" class="btn btn-secondary">إلغاء</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

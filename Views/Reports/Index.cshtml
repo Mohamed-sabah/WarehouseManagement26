@@ -1,0 +1,123 @@
+@{
+    ViewData["Title"] = "التقارير";
+    ViewData["Breadcrumb"] = "تقارير وإحصائيات النظام";
+
+}
+
+<div class="page-header">
+    <h1><i class="bi bi-file-earmark-bar-graph me-2"></i>التقارير</h1>
+</div>
+
+<div class="row g-4">
+    <!-- Inventory Reports -->
+    <div class="col-12">
+        <h5 class="mb-3 text-primary"><i class="bi bi-boxes me-2"></i>تقارير المخزون</h5>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <i class="fas fa-coins fa-3x text-primary mb-3"></i>
+                <h5>تقرير المواد</h5>
+                <p class="text-muted">قائمة شاملة بجميع المواد</p>
+          
+                <a asp-action="MaterialsValue" class="btn btn-primary">عرض التقرير</a>
+            </div>
+        </div>
+    </div>
+
+    
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+             @*    <i class="bi bi-geo-alt display-4 text-success mb-3"></i> *@
+                <i class="fas fa-exchange-alt fa-3x text-secondary mb-3"></i>
+                <h5>تقرير الموقع</h5>
+                <p class="text-muted">مخزون موقع محدد</p>
+                <a asp-action="LocationReport" class="btn btn-success">عرض التقرير</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+               @*  <i class="bi bi-exclamation-triangle display-4 text-warning mb-3"></i> *@
+                <i class="fas fa-exclamation-triangle fa-3x text-danger mb-3"></i>
+                <h5>المخزون المنخفض</h5>
+                <p class="text-muted">المواد التي تحتاج إعادة تزويد</p>
+                <a asp-action="LowStockReport" class="btn btn-warning">عرض التقرير</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+        @*         <i class="bi bi-clock-history display-4 text-danger mb-3"></i> *@
+                <i class="fas fa-calendar-times fa-3x text-danger mb-3"></i>
+                <h5>قرب انتهاء الصلاحية</h5>
+                <p class="text-muted">المواد المنتهية أو قرب الانتهاء</p>
+                <a asp-action="ExpiryReport" class="btn btn-danger">عرض التقرير</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+               @*  <i class="bi bi-calculator display-4 text-info mb-3"></i> *@
+                <i class="fas fa-shopping-cart fa-3x text-success mb-3"></i>
+                <h5>تقرير الأسعار</h5>
+                <p class="text-muted">تاريخ أسعار مادة محددة</p>
+                <a asp-action="PricingReport" class="btn btn-info">عرض التقرير</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Purchase Reports -->
+    <div class="col-12 mt-4">
+        <h5 class="mb-3 text-primary"><i class="bi bi-cart-plus me-2"></i>تقارير المشتريات</h5>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+            @*     <i class="bi bi-calendar3 display-4 text-primary mb-3"></i> *@
+                <i class="fas fa-clipboard-list fa-3x text-info mb-3"></i>
+                <h5>التقرير السنوي للمشتريات</h5>
+                <p class="text-muted">ملخص مشتريات السنة</p>
+                <a asp-action="PurchasesYearly" class="btn btn-primary">عرض التقرير</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Government Forms -->
+    <div class="col-12 mt-4">
+        <h5 class="mb-3 text-primary"><i class="bi bi-file-earmark-text me-2"></i>النماذج الحكومية</h5>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card h-100 border-primary">
+            <div class="card-body text-center">
+              @*   <i class="bi bi-clipboard-check display-4 text-primary mb-3"></i> *@
+                <i class="fas fa-file-invoice fa-3x text-secondary mb-3"></i>
+                <h5>نموذج رقم (2)</h5>
+                <p class="text-muted">قائمة بموجودات المخازن</p>
+                <a asp-action="InventoryForm2" class="btn btn-outline-primary">عرض النموذج</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card h-100 border-danger">
+            <div class="card-body text-center">
+              @*   <i class="bi bi-trash3 display-4 text-danger mb-3"></i> *@
+                <i class="fas fa-file-invoice fa-3x text-warning mb-3"></i>
+                <h5>نموذج رقم (5)</h5>
+                <p class="text-muted">قائمة بالموجودات المستهلكة</p>
+                <a asp-action="ConsumptionForm5" class="btn btn-outline-danger">عرض النموذج</a>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,145 @@
+@model MaterialCreateEditViewModel
+@{
+    ViewData["Title"] = "إضافة مادة جديدة";
+    ViewData["Breadcrumb"] = "إضافة مادة";
+}
+
+<div class="page-header">
+    <h1><i class="bi bi-plus-circle me-2"></i>إضافة مادة جديدة</h1>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <form asp-action="Create" method="post">
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+            <div class="row">
+                <!-- Basic Info -->
+                <div class="col-lg-8">
+                    <h5 class="mb-3 text-primary"><i class="bi bi-info-circle me-2"></i>المعلومات الأساسية</h5>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-8">
+                            <label asp-for="Material.Name" class="form-label">اسم المادة <span class="text-danger">*</span></label>
+                            <input asp-for="Material.Name" class="form-control" placeholder="أدخل اسم المادة" />
+                            <span asp-validation-for="Material.Name" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="Material.Code" class="form-label">الرمز <span class="text-danger">*</span></label>
+                            <input asp-for="Material.Code" class="form-control" placeholder="MAT-001" />
+                            <span asp-validation-for="Material.Code" class="text-danger"></span>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label asp-for="Material.CategoryId" class="form-label">الفئة</label>
+                            <select asp-for="Material.CategoryId" class="form-select">
+                                <option value="">-- اختر الفئة --</option>
+                                @foreach (var cat in Model.Categories)
+                                {
+                                    <option value="@cat.Id">@cat.Name</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label asp-for="Material.Unit" class="form-label">الوحدة <span class="text-danger">*</span></label>
+                            <select asp-for="Material.Unit" class="form-select">
+                                <option value="قطعة">قطعة</option>
+                                <option value="كيلوغرام">كيلوغرام</option>
+                                <option value="لتر">لتر</option>
+                                <option value="متر">متر</option>
+                                <option value="علبة">علبة</option>
+                                <option value="رزمة">رزمة</option>
+                                <option value="كرتون">كرتون</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label asp-for="Material.MinimumStock" class="form-label">الحد الأدنى</label>
+                            <input asp-for="Material.MinimumStock" class="form-control" type="number" min="0" />
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Material.Description" class="form-label">الوصف</label>
+                        <textarea asp-for="Material.Description" class="form-control" rows="3" placeholder="وصف المادة..."></textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Material.Specifications" class="form-label">المواصفات</label>
+                        <textarea asp-for="Material.Specifications" class="form-control" rows="2" placeholder="المواصفات الفنية..."></textarea>
+                    </div>
+                </div>
+
+                <!-- Initial Stock (Optional) -->
+                <div class="col-lg-4">
+                    <div class="card bg-light">
+                        <div class="card-header">
+                            <div class="form-check">
+                                <input type="checkbox" asp-for="AddInitialStock" class="form-check-input" id="addStockCheck" onchange="toggleInitialStock()">
+                                <label class="form-check-label fw-bold" for="addStockCheck">
+                                    <i class="bi bi-boxes me-1"></i>إضافة مخزون أولي
+                                </label>
+                            </div>
+                        </div>
+                        <div class="card-body" id="initialStockSection" style="display: none;">
+                            <div class="mb-3">
+                                <label asp-for="InitialStock.LocationId" class="form-label">الموقع <span class="text-danger">*</span></label>
+                                <select asp-for="InitialStock.LocationId" class="form-select">
+                                    <option value="">-- اختر الموقع --</option>
+                                    @foreach (var loc in Model.Locations)
+                                    {
+                                        <option value="@loc.Id">@loc.Name</option>
+                                    }
+                                </select>
+                            </div>
+
+                            <div class="mb-3">
+                                <label asp-for="InitialStock.Quantity" class="form-label">الكمية <span class="text-danger">*</span></label>
+                                <input asp-for="InitialStock.Quantity" class="form-control" type="number" min="1" />
+                            </div>
+
+                            <div class="mb-3">
+                                <label asp-for="InitialStock.UnitPrice" class="form-label">سعر الوحدة</label>
+                                <div class="input-group">
+                                    <input asp-for="InitialStock.UnitPrice" class="form-control" type="number" step="0.01" min="0" />
+                                    <span class="input-group-text">د.ع</span>
+                                </div>
+                                <small class="text-muted">اختياري - سيتم تسجيله كرصيد افتتاحي</small>
+                            </div>
+
+                            <div class="mb-3">
+                                <label asp-for="InitialStock.ExpiryDate" class="form-label">تاريخ الانتهاء</label>
+                                <input asp-for="InitialStock.ExpiryDate" class="form-control" type="date" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <hr class="my-4">
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-check-lg me-1"></i>حفظ المادة
+                </button>
+                <a asp-action="Index" class="btn btn-secondary">
+                    <i class="bi bi-x-lg me-1"></i>إلغاء
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        function toggleInitialStock() {
+            var checkbox = document.getElementById('addStockCheck');
+            var section = document.getElementById('initialStockSection');
+            section.style.display = checkbox.checked ? 'block' : 'none';
+        }
+        // Initialize on page load
+        toggleInitialStock();
+    </script>
+}

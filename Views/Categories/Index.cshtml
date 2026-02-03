@@ -1,0 +1,57 @@
+@model List<Category>
+@{
+    ViewData["Title"] = "الفئات";
+    ViewData["Breadcrumb"] = "الفئات";
+}
+
+<div class="page-header d-flex justify-content-between align-items-center">
+    <h1><i class="bi bi-tags me-2"></i>الفئات</h1>
+    <a asp-action="Create" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i>إضافة فئة</a>
+</div>
+
+<div class="card">
+    <div class="card-body p-0">
+        @if (Model.Any())
+        {
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>الاسم</th>
+                            <th>الوصف</th>
+                            <th>الفئة الأم</th>
+                            <th>عدد المواد</th>
+                            <th class="text-center">إجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var cat in Model)
+                        {
+                            <tr>
+                                <td><a asp-action="Details" asp-route-id="@cat.Id">@cat.Name</a></td>
+                                <td>@(cat.Description ?? "-")</td>
+                                <td>@(cat.ParentCategory?.Name ?? "-")</td>
+                                <td><span class="badge bg-info">@cat.Materials.Count(m => m.IsActive)</span></td>
+                                <td class="text-center action-buttons">
+   @*                                  <a asp-action="Edit" asp-route-id="@cat.Id" class="btn btn-sm btn-outline-warning"><i class="bi bi-pencil"></i></a>
+                                    <a asp-action="Delete" asp-route-id="@cat.Id" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></a> *@
+                                    <a asp-action="Details" asp-route-id="@cat.Id" class="btn btn-outline-info"><i class="fas fa-eye"></i></a>
+                                    <a asp-action="Edit" asp-route-id="@cat.Id" class="btn btn-outline-warning"><i class="fas fa-edit"></i></a>
+                                    <a asp-action="Delete" asp-route-id="@cat.Id" class="btn btn-outline-danger"><i class="fas fa-trash"></i></a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="text-center py-5">
+                <i class="bi bi-inbox display-1 text-muted"></i>
+                <p class="mt-3 text-muted">لا توجد فئات</p>
+                <a asp-action="Create" class="btn btn-primary">إضافة فئة جديدة</a>
+            </div>
+        }
+    </div>
+</div>

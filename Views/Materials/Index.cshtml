@@ -1,0 +1,272 @@
+@model IEnumerable<Material>
+@{
+    ViewData["Title"] = "المواد";
+    ViewData["Subtitle"] = "إدارة المواد والمستلزمات";
+}
+
+<!-- Filters -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label">البحث</label>
+                <input type="text" name="searchTerm" class="form-control" value="@ViewBag.SearchTerm" placeholder="اسم أو رمز المادة...">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">الفئة</label>
+                <select name="categoryId" class="form-select">
+                    <option value="">جميع الفئات</option>
+                    @foreach (var category in ViewBag.Categories as IEnumerable<Category>)
+                    {
+                        <option value="@category.Id" selected="@(ViewBag.CategoryId?.ToString() == category.Id.ToString())">
+                            @category.Name
+                        </option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">&nbsp;</label>
+                <div class="form-check mt-2">
+                    <input type="checkbox" name="lowStockOnly" value="true" class="form-check-input"
+                           id="lowStockOnly" @(ViewBag.LowStockOnly == true ? "checked" : "")>
+                    <label class="form-check-label" for="lowStockOnly">المخزون المنخفض فقط</label>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">&nbsp;</label>
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="fas fa-search"></i> بحث
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Actions Bar -->
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <span class="text-muted">عدد النتائج: @Model.Count()</span>
+    </div>
+    <div>
+        <a asp-action="Create" class="btn btn-primary">
+            <i class="fas fa-plus"></i> إضافة مادة جديدة
+        </a>
+    </div>
+</div>
+
+<!-- Materials Table -->
+<div class="card">
+    <div class="card-body">
+        @if (Model.Any())
+        {
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>الرمز</th>
+                            <th>اسم المادة</th>
+                            <th>الفئة</th>
+                            <th>الوحدة</th>
+                            <th>الكمية</th>
+                            <th>السعر المتوسط</th>
+                            <th>القيمة</th>
+                            <th>الحالة</th>
+                            <th>الإجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @{
+                            int index = 1;
+                        }
+                        @foreach (var material in Model)
+                        {
+                            <tr>
+                                <td>@(index++)</td>
+                                <td><code>@material.Code</code></td>
+                                <td>
+                                    <a asp-action="Details" asp-route-id="@material.Id" class="text-decoration-none">
+                                        @material.Name
+                                    </a>
+                                </td>
+                                <td>@material.Category?.Name</td>
+                                <td>@material.Unit</td>
+                                <td>
+                                    @material.TotalQuantity
+                                    @if (material.IsLowStock)
+                                    {
+                                        <i class="fas fa-exclamation-triangle text-warning ms-1" title="مخزون منخفض"></i>
+                                    }
+                                </td>
+                                <td>@material.AveragePrice.ToString("N0") د.ع</td>
+                                <td>@material.TotalValue.ToString("N0") د.ع</td>
+                                <td>
+                                    @if (material.IsActive)
+                                    {
+                                        <span class="badge bg-success">فعال</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary">غير فعال</span>
+                                    }
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <a asp-action="Details" asp-route-id="@material.Id" class="btn btn-outline-info" title="عرض">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a asp-action="Edit" asp-route-id="@material.Id" class="btn btn-outline-warning" title="تعديل">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <a asp-controller="Purchases" asp-action="Create" asp-route-materialId="@material.Id"
+                                           class="btn btn-outline-success" title="شراء">
+                                            <i class="fas fa-shopping-cart"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="text-center py-5">
+                <i class="fas fa-inbox fa-4x text-muted mb-3"></i>
+                <h5>لا توجد مواد</h5>
+                <p class="text-muted">ابدأ بإضافة مادة جديدة</p>
+                <a asp-action="Create" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> إضافة مادة
+                </a>
+            </div>
+        }
+    </div>
+</div>
+
+
+@* @model List<Material>
+@{
+    ViewData["Title"] = "المواد";
+    ViewData["Breadcrumb"] = "المواد";
+}
+
+<div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <h1><i class="bi bi-box me-2"></i>المواد</h1>
+    <a asp-action="Create" class="btn btn-primary">
+        <i class="bi bi-plus-lg me-1"></i>إضافة مادة جديدة
+    </a>
+</div>
+
+<!-- Filters -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label">البحث</label>
+                <input type="text" name="searchTerm" class="form-control" value="@ViewBag.SearchTerm" placeholder="اسم أو رمز المادة...">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">الفئة</label>
+                <select name="categoryId" class="form-select">
+                    <option value="">-- جميع الفئات --</option>
+                    @foreach (var cat in ViewBag.Categories as List<Category>)
+                    {
+                        <option value="@cat.Id" selected="@(ViewBag.CategoryId != null && (int)ViewBag.CategoryId == cat.Id)">@cat.Name</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">المخزون</label>
+                <div class="form-check mt-2">
+                    <input type="checkbox" name="lowStockOnly" value="true" class="form-check-input" id="lowStock" @(ViewBag.LowStockOnly == true ? "checked" : "")>
+                    <label class="form-check-label" for="lowStock">المنخفض فقط</label>
+                </div>
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-secondary w-100">
+                    <i class="bi bi-search me-1"></i>بحث
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Results -->
+<div class="card">
+    <div class="card-header">
+        <i class="bi bi-list me-2"></i>قائمة المواد (@Model.Count)
+    </div>
+    <div class="card-body p-0">
+        @if (Model.Any())
+        {
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>الرمز</th>
+                            <th>الاسم</th>
+                            <th>الفئة</th>
+                            <th>الوحدة</th>
+                            <th>الكمية</th>
+                            <th>متوسط السعر</th>
+                            <th>القيمة</th>
+                            <th>الحالة</th>
+                            <th class="text-center">إجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model)
+                        {
+                            <tr>
+                                <td><code>@item.Code</code></td>
+                                <td>
+                                    <a asp-action="Details" asp-route-id="@item.Id" class="text-decoration-none fw-bold">
+                                        @item.Name
+                                    </a>
+                                </td>
+                                <td>@item.Category?.Name</td>
+                                <td>@item.Unit</td>
+                                <td>@item.TotalQuantity</td>
+                                <td>@item.AveragePrice.ToString("N0")</td>
+                                <td>@item.TotalValue.ToString("N0")</td>
+                                <td>
+                                    @if (item.IsLowStock)
+                                    {
+                                        <span class="badge bg-danger">منخفض</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-success">جيد</span>
+                                    }
+                                </td>
+                                <td class="text-center action-buttons">
+                                    <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-outline-info" title="عرض">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-warning" title="تعديل">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-sm btn-outline-danger" title="حذف">
+                                        <i class="bi bi-trash"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="text-center py-5">
+                <i class="bi bi-inbox display-1 text-muted"></i>
+                <p class="text-muted mt-3">لا توجد مواد مطابقة للبحث</p>
+                <a asp-action="Create" class="btn btn-primary">
+                    <i class="bi bi-plus-lg me-1"></i>إضافة مادة جديدة
+                </a>
+            </div>
+        }
+    </div>
+</div>
+ *@

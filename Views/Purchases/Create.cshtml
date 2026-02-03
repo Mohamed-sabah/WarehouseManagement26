@@ -1,0 +1,158 @@
+@model PurchaseCreateEditViewModel
+@{
+    ViewData["Title"] = "تسجيل شراء";
+    ViewData["Breadcrumb"] = "شراء جديد";
+}
+
+<div class="page-header"><h1><i class="bi bi-cart-plus me-2"></i>تسجيل شراء جديد</h1></div>
+
+<div class="card">
+    <div class="card-body">
+        <form asp-action="Create" method="post">
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+            <div class="row">
+                <div class="col-lg-8">
+                    <!-- Material Selection -->
+                    <div class="mb-3">
+                        <div class="form-check mb-2">
+                            <input type="checkbox" asp-for="CreateNewMaterial" class="form-check-input" id="newMaterialCheck" onchange="toggleNewMaterial()">
+                            <label class="form-check-label" for="newMaterialCheck">إنشاء مادة جديدة</label>
+                        </div>
+
+                        <div id="existingMaterialSection">
+                            <label asp-for="Purchase.MaterialId" class="form-label">المادة <span class="text-danger">*</span></label>
+                            <select asp-for="Purchase.MaterialId" class="form-select">
+                                <option value="">-- اختر المادة --</option>
+                                @foreach (var m in Model.Materials)
+                                {
+                                    <option value="@m.Id">@m.Name (@m.Code)</option>
+                                }
+                            </select>
+                        </div>
+
+                        <div id="newMaterialSection" style="display: none;" class="border rounded p-3 bg-light">
+                            <h6 class="mb-3">معلومات المادة الجديدة</h6>
+                            <div class="row mb-2">
+                                <div class="col-md-6">
+                                    <label class="form-label">اسم المادة</label>
+                                    <input asp-for="NewMaterial.Name" class="form-control" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">الرمز</label>
+                                    <input asp-for="NewMaterial.Code" class="form-control" />
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <label class="form-label">الفئة</label>
+                                    <select asp-for="NewMaterial.CategoryId" class="form-select">
+                                        <option value="">-- اختر --</option>
+                                        @foreach (var cat in ViewBag.Categories as List<Category> ?? new List<Category>())
+                                        {
+                                            <option value="@cat.Id">@cat.Name</option>
+                                        }
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">الوحدة</label>
+                                    <input asp-for="NewMaterial.Unit" class="form-control" value="قطعة" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label asp-for="Purchase.LocationId" class="form-label">الموقع <span class="text-danger">*</span></label>
+                            <select asp-for="Purchase.LocationId" class="form-select">
+                                <option value="">-- اختر الموقع --</option>
+                                @foreach (var l in Model.Locations)
+                                {
+                                    <option value="@l.Id">@l.Name</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="Purchase.PurchaseDate" class="form-label">تاريخ الشراء</label>
+                            <input asp-for="Purchase.PurchaseDate" class="form-control" type="date" />
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label asp-for="Purchase.Quantity" class="form-label">الكمية <span class="text-danger">*</span></label>
+                            <input asp-for="Purchase.Quantity" class="form-control" type="number" min="1" />
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="Purchase.UnitPrice" class="form-label">سعر الوحدة <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <input asp-for="Purchase.UnitPrice" class="form-control" type="number" step="0.01" min="0" />
+                                <span class="input-group-text">د.ع</span>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="Purchase.Method" class="form-label">طريقة الاقتناء</label>
+                            <select asp-for="Purchase.Method" asp-items="Html.GetEnumSelectList<AcquisitionMethod>()" class="form-select"></select>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label asp-for="Purchase.Supplier" class="form-label">المورد</label>
+                            <input asp-for="Purchase.Supplier" class="form-control" />
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="Purchase.InvoiceNumber" class="form-label">رقم الفاتورة</label>
+                            <input asp-for="Purchase.InvoiceNumber" class="form-control" />
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Purchase.Notes" class="form-label">ملاحظات</label>
+                        <textarea asp-for="Purchase.Notes" class="form-control" rows="2"></textarea>
+                    </div>
+                </div>
+
+                <div class="col-lg-4">
+                    <div class="card bg-light">
+                        <div class="card-header">خيارات إضافية</div>
+                        <div class="card-body">
+                            <div class="form-check mb-3">
+                                <input type="checkbox" asp-for="AddToStockAutomatically" class="form-check-input" checked>
+                                <label asp-for="AddToStockAutomatically" class="form-check-label">إضافة للمخزون تلقائياً</label>
+                            </div>
+
+                            <div class="mb-3">
+                                <label asp-for="Purchase.ExpiryDate" class="form-label">تاريخ الانتهاء</label>
+                                <input asp-for="Purchase.ExpiryDate" class="form-control" type="date" />
+                            </div>
+
+                            <div class="mb-3">
+                                <label asp-for="Purchase.BatchNumber" class="form-label">رقم الدفعة</label>
+                                <input asp-for="Purchase.BatchNumber" class="form-control" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <hr>
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i>حفظ</button>
+                <a asp-action="Index" class="btn btn-secondary">إلغاء</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        function toggleNewMaterial() {
+            var checkbox = document.getElementById('newMaterialCheck');
+            document.getElementById('existingMaterialSection').style.display = checkbox.checked ? 'none' : 'block';
+            document.getElementById('newMaterialSection').style.display = checkbox.checked ? 'block' : 'none';
+        }
+    </script>
+}

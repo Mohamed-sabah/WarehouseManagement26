@@ -1,0 +1,219 @@
+@model IEnumerable<Transfer>
+@{
+    ViewData["Title"] = "عمليات النقل";
+    ViewData["Subtitle"] = "نقل المواد بين المواقع";
+}
+
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label">المادة</label>
+                <select name="materialId" class="form-select">
+                    <option value="">جميع المواد</option>
+                    @foreach (var m in ViewBag.Materials as IEnumerable<Material>)
+                    {
+                        <option value="@m.Id" selected="@(ViewBag.MaterialId?.ToString() == m.Id.ToString())">@m.Name</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">الموقع</label>
+                <select name="locationId" class="form-select">
+                    <option value="">جميع المواقع</option>
+                    @foreach (var l in ViewBag.Locations as IEnumerable<Location>)
+                    {
+                        <option value="@l.Id" selected="@(ViewBag.LocationId?.ToString() == l.Id.ToString())">@l.Name</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">&nbsp;</label>
+                <div class="form-check mt-2">
+                    <input type="checkbox" name="pendingOnly" value="true" class="form-check-input" id="pendingOnly" @(ViewBag.PendingOnly == true ? "checked" : "")>
+                    <label class="form-check-label" for="pendingOnly">المعلقة فقط</label>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">&nbsp;</label>
+                <button type="submit" class="btn btn-primary w-100"><i class="fas fa-filter"></i> تصفية</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="d-flex justify-content-between mb-3">
+    <span class="text-muted">@Model.Count() عملية نقل</span>
+    <a asp-action="Create" class="btn btn-primary"><i class="fas fa-plus"></i> طلب نقل جديد</a>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        @if (Model.Any())
+        {
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>التاريخ</th>
+                            <th>المادة</th>
+                            <th>من</th>
+                            <th>إلى</th>
+                            <th>الكمية</th>
+                            <th>الحالة</th>
+                            <th>الإجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @{
+                            int i = 1;
+                        }
+                        @foreach (var t in Model)
+                        {
+                            <tr class="@(!t.IsConfirmed ? "table-warning" : t.IsExecuted ? "" : "table-info")">
+                                <td>@(i++)</td>
+                                <td>@t.TransferDate.ToString("yyyy/MM/dd")</td>
+                                <td><a asp-controller="Materials" asp-action="Details" asp-route-id="@t.MaterialId">@t.Material.Name</a></td>
+                                <td>@t.FromLocation.Name</td>
+                                <td>@t.ToLocation.Name</td>
+                                <td>@t.Quantity</td>
+                                <td>
+                                    @if (t.IsExecuted)
+                                    {
+                                        <span class="badge bg-success">منفذ</span>
+                                    }
+                                    else if (t.IsConfirmed)
+                                    {
+                                        <span class="badge bg-info">مؤكد - بانتظار التنفيذ</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-warning">معلق - بانتظار التأكيد</span>
+                                    }
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <a asp-action="Details" asp-route-id="@t.Id" class="btn btn-outline-info"><i class="fas fa-eye"></i></a>
+                                        @if (!t.IsConfirmed)
+                                        {
+                                            <form asp-action="Confirm" asp-route-id="@t.Id" method="post" style="display:inline;">
+                                                <input type="hidden" name="confirmedBy" value="المستخدم">
+                                                <button type="submit" class="btn btn-outline-success btn-sm" title="تأكيد"><i class="fas fa-check"></i></button>
+                                            </form>
+                                        }
+                                        else if (!t.IsExecuted)
+                                        {
+                                            <form asp-action="Execute" asp-route-id="@t.Id" method="post" style="display:inline;">
+                                                <button type="submit" class="btn btn-outline-primary btn-sm" title="تنفيذ"><i class="fas fa-play"></i></button>
+                                            </form>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="text-center py-5">
+                <i class="fas fa-exchange-alt fa-4x text-muted mb-3"></i>
+                <h5>لا توجد عمليات نقل</h5>
+                <a asp-action="Create" class="btn btn-primary"><i class="fas fa-plus"></i> طلب نقل</a>
+            </div>
+        }
+    </div>
+</div>
+
+
+@* @model List<Transfer>
+@{
+    ViewData["Title"] = "عمليات النقل";
+    ViewData["Breadcrumb"] = "النقل";
+}
+
+<div class="page-header d-flex justify-content-between align-items-center">
+    <h1><i class="bi bi-arrow-left-right me-2"></i>عمليات النقل</h1>
+    <div>
+        @if ((int)ViewBag.PendingCount > 0)
+        {
+            <a asp-action="Pending" class="btn btn-warning"><i class="bi bi-clock me-1"></i>معلق (@ViewBag.PendingCount)</a>
+        }
+        <a asp-action="Create" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i>نقل جديد</a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body p-0">
+        @if (Model.Any())
+        {
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>التاريخ</th>
+                            <th>المادة</th>
+                            <th>من</th>
+                            <th>إلى</th>
+                            <th>الكمية</th>
+                            <th>الحالة</th>
+                            <th class="text-center">إجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var t in Model)
+                        {
+                            <tr class="@(t.IsCancelled ? "table-secondary" : "")">
+                                <td>@t.TransferDate.ToString("yyyy-MM-dd")</td>
+                                <td><a asp-controller="Materials" asp-action="Details" asp-route-id="@t.MaterialId">@t.Material?.Name</a></td>
+                                <td>@t.FromLocation?.Name</td>
+                                <td>@t.ToLocation?.Name</td>
+                                <td>@t.Quantity</td>
+                                <td>
+                                    @if (t.IsCancelled)
+                                    {
+                                        <span class="badge bg-secondary">ملغي</span>
+                                    }
+                                    else if (t.IsExecuted)
+                                    {
+                                        <span class="badge bg-success">منفذ</span>
+                                    }
+                                    else if (t.IsConfirmed)
+                                    {
+                                        <span class="badge bg-info">مؤكد</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-warning">معلق</span>
+                                    }
+                                </td>
+                                <td class="text-center action-buttons">
+                                    <a asp-action="Details" asp-route-id="@t.Id" class="btn btn-sm btn-outline-info"><i class="bi bi-eye"></i></a>
+                                    @if (!t.IsConfirmed && !t.IsCancelled)
+                                    {
+                                        <form asp-action="Confirm" asp-route-id="@t.Id" method="post" class="d-inline">
+                                            <button type="submit" class="btn btn-sm btn-outline-success" title="تأكيد"><i class="bi bi-check-lg"></i></button>
+                                        </form>
+                                        <form asp-action="Cancel" asp-route-id="@t.Id" method="post" class="d-inline">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger" title="إلغاء"><i class="bi bi-x-lg"></i></button>
+                                        </form>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="text-center py-5 text-muted">
+                <i class="bi bi-inbox display-1"></i>
+                <p class="mt-3">لا توجد عمليات نقل</p>
+            </div>
+        }
+    </div>
+</div>
+ *@

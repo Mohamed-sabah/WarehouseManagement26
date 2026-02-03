@@ -1,0 +1,52 @@
+@model Material
+@{
+    ViewData["Title"] = "حذف المادة";
+    ViewData["Breadcrumb"] = "حذف المادة";
+}
+
+<div class="page-header">
+    <h1 class="text-danger"><i class="bi bi-trash me-2"></i>حذف المادة</h1>
+</div>
+
+<div class="card border-danger">
+    <div class="card-header bg-danger text-white">
+        <i class="bi bi-exclamation-triangle me-2"></i>تأكيد الحذف
+    </div>
+    <div class="card-body">
+        <div class="alert alert-warning">
+            <i class="bi bi-exclamation-circle me-2"></i>
+            هل أنت متأكد من حذف هذه المادة؟ سيتم إلغاء تفعيلها وستبقى البيانات محفوظة.
+        </div>
+
+        <table class="table">
+            <tr><th style="width: 150px;">الرمز:</th><td><code>@Model.Code</code></td></tr>
+            <tr><th>الاسم:</th><td>@Model.Name</td></tr>
+            <tr><th>الفئة:</th><td>@Model.Category?.Name</td></tr>
+            <tr><th>الكمية الحالية:</th><td>@Model.TotalQuantity</td></tr>
+        </table>
+
+        @if (Model.Stocks.Any(s => s.Quantity > 0))
+        {
+            <div class="alert alert-danger">
+                <i class="bi bi-x-circle me-2"></i>
+                <strong>تحذير:</strong> لا يمكن حذف هذه المادة لأنها تحتوي على مخزون (@Model.TotalQuantity وحدة).
+                يرجى نقل أو استهلاك المخزون أولاً.
+            </div>
+        }
+
+        <form asp-action="Delete" method="post">
+            <input type="hidden" asp-for="Id" />
+            <div class="d-flex gap-2">
+                @if (!Model.Stocks.Any(s => s.Quantity > 0))
+                {
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-trash me-1"></i>تأكيد الحذف
+                    </button>
+                }
+                <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-secondary">
+                    <i class="bi bi-arrow-right me-1"></i>إلغاء
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
