@@ -1,0 +1,209 @@
+@model IEnumerable<MaterialStock>
+@{
+    ViewData["Title"] = "المواد قرب انتهاء الصلاحية";
+    ViewData["Subtitle"] = "المواد المنتهية أو التي ستنتهي قريباً";
+    var days = ViewBag.Days ?? 30;
+}
+
+<div class="page-header d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1><i class="fas fa-calendar-times text-danger me-2"></i>انتهاء الصلاحية</h1>
+        <small class="text-muted">المواد المنتهية أو التي ستنتهي خلال @days يوم</small>
+    </div>
+    <div>
+        <a asp-action="Index" class="btn btn-secondary">
+            <i class="fas fa-arrow-right me-1"></i>العودة للمخزون
+        </a>
+        <button onclick="window.print()" class="btn btn-info">
+            <i class="fas fa-print me-1"></i>طباعة
+        </button>
+    </div>
+</div>
+
+<!-- Filter -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label">عرض المواد التي ستنتهي خلال</label>
+                <select name="days" class="form-select" onchange="this.form.submit()">
+                    <option value="7" selected="@(days == 7)">7 أيام</option>
+                    <option value="14" selected="@(days == 14)">14 يوم</option>
+                    <option value="30" selected="@(days == 30)">30 يوم</option>
+                    <option value="60" selected="@(days == 60)">60 يوم</option>
+                    <option value="90" selected="@(days == 90)">90 يوم</option>
+                    <option value="180" selected="@(days == 180)">180 يوم</option>
+                    <option value="365" selected="@(days == 365)">سنة</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="fas fa-filter"></i> تصفية
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Statistics -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card bg-danger text-white text-center p-3">
+            <h3 class="mb-0">@ViewBag.ExpiredCount</h3>
+            <small>منتهي الصلاحية</small>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card bg-warning text-white text-center p-3">
+            <h3 class="mb-0">@ViewBag.ExpiringSoonCount</h3>
+            <small>ينتهي قريباً</small>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card bg-info text-white text-center p-3">
+            <h3 class="mb-0">@Model.Count()</h3>
+            <small>إجمالي العناصر</small>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header bg-danger text-white">
+        <i class="fas fa-exclamation-triangle me-2"></i>
+        قائمة المواد حسب تاريخ الانتهاء - @Model.Count() عنصر
+    </div>
+    <div class="card-body">
+        @if (Model.Any())
+        {
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>#</th>
+                            <th>الرمز</th>
+                            <th>اسم المادة</th>
+                            <th>الموقع</th>
+                            <th>الكمية</th>
+                            <th>تاريخ الانتهاء</th>
+                            <th>الأيام المتبقية</th>
+                            <th>القيمة</th>
+                            <th>الحالة</th>
+                            <th>الإجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @{
+                            int index = 1;
+                        }
+                        @foreach (var stock in Model)
+                        {
+                            var daysRemaining = stock.ExpiryDate.HasValue 
+                                ? (stock.ExpiryDate.Value - DateTime.Now).Days 
+                                : 0;
+                            var isExpired = stock.IsExpired;
+                            var isExpiringSoon = stock.IsExpiringSoon;
+                            
+                            <tr class="@(isExpired ? "table-danger" : isExpiringSoon ? "table-warning" : "")">
+                                <td>@(index++)</td>
+                                <td><code>@stock.Material.Code</code></td>
+                                <td>
+                                    <a asp-controller="Materials" asp-action="Details" asp-route-id="@stock.MaterialId">
+                                        @stock.Material.Name
+                                    </a>
+                                </td>
+                                <td>@stock.Location.Name</td>
+                                <td>@stock.Quantity @stock.Material.Unit</td>
+                                <td>
+                                    <strong>@stock.ExpiryDate?.ToString("yyyy/MM/dd")</strong>
+                                </td>
+                                <td>
+                                    @if (isExpired)
+                                    {
+                                        <span class="badge bg-danger">
+                                            <i class="fas fa-times-circle me-1"></i>
+                                            منتهي منذ @Math.Abs(daysRemaining) يوم
+                                        </span>
+                                    }
+                                    else if (daysRemaining <= 7)
+                                    {
+                                        <span class="badge bg-danger">@daysRemaining يوم</span>
+                                    }
+                                    else if (daysRemaining <= 30)
+                                    {
+                                        <span class="badge bg-warning">@daysRemaining يوم</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-info">@daysRemaining يوم</span>
+                                    }
+                                </td>
+                                <td>@stock.CurrentValue.ToString("N0") د.ع</td>
+                                <td>
+                                    @if (isExpired)
+                                    {
+                                        <span class="badge bg-danger">منتهي</span>
+                                    }
+                                    else if (isExpiringSoon)
+                                    {
+                                        <span class="badge bg-warning">ينتهي قريباً</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-info">صالح</span>
+                                    }
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <a asp-action="Details" asp-route-id="@stock.Id" 
+                                           class="btn btn-outline-info" title="عرض">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        @if (isExpired)
+                                        {
+                                            <a asp-controller="Inventory" asp-action="TransferToConsumption" 
+                                               asp-route-materialId="@stock.MaterialId"
+                                               class="btn btn-outline-danger" title="تحويل للاستهلاك">
+                                                <i class="fas fa-trash"></i>
+                                            </a>
+                                        }
+                                        <a asp-controller="Transfers" asp-action="Create" 
+                                           asp-route-materialId="@stock.MaterialId" 
+                                           asp-route-fromLocationId="@stock.LocationId"
+                                           class="btn btn-outline-primary" title="نقل">
+                                            <i class="fas fa-exchange-alt"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                    <tfoot class="table-light">
+                        <tr class="fw-bold">
+                            <td colspan="4">المجموع</td>
+                            <td>@Model.Sum(s => s.Quantity)</td>
+                            <td colspan="2"></td>
+                            <td>@Model.Sum(s => s.CurrentValue).ToString("N0") د.ع</td>
+                            <td colspan="2"></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="text-center py-5">
+                <i class="fas fa-check-circle fa-4x text-success mb-3"></i>
+                <h5>لا توجد مواد قرب انتهاء الصلاحية</h5>
+                <p class="text-muted">جميع المواد ذات الصلاحية المحددة في حالة جيدة</p>
+            </div>
+        }
+    </div>
+</div>
+
+@section Styles {
+    <style>
+        @@media print {
+            .btn, .btn-group, .card.mb-4:first-of-type { display: none !important; }
+        }
+    </style>
+}

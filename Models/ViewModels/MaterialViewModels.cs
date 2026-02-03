@@ -203,9 +203,9 @@ namespace WarehouseManagement.Models.ViewModels
     #region Report ViewModels
 
     /// <summary>
-    /// ViewModel لتقرير الموقع
+    /// ViewModel لتقرير الموقع (تفاصيل موقع واحد)
     /// </summary>
-    public class LocationReportViewModel
+    public class LocationDetailReportViewModel
     {
         public Location Location { get; set; } = null!;
         public List<MaterialStock> Stocks { get; set; } = new();
@@ -216,9 +216,9 @@ namespace WarehouseManagement.Models.ViewModels
     }
 
     /// <summary>
-    /// ViewModel لتقرير الأسعار
+    /// ViewModel لتقرير الأسعار (تفصيل مادة واحدة)
     /// </summary>
-    public class PricingReportViewModel
+    public class PricingDetailReportViewModel
     {
         public Material Material { get; set; } = null!;
         public List<Purchase> Purchases { get; set; } = new();

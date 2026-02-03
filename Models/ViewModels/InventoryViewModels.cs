@@ -182,6 +182,15 @@ namespace WarehouseManagement.Models.ViewModels
         [Display(Name = "عناصر الجرد")]
         public List<InventoryRecord> Records { get; set; } = new();
 
+        // Compatibility properties expected by views
+        public string InstitutionName { get; set; } = string.Empty;
+        public string? DepartmentName { get; set; }
+        public DateTime? InventoryDate { get; set; }
+        public string? ReportNumber { get; set; }
+
+        // Flat list of items expected by some views
+        public List<InventoryReportItemViewModel> Items { get; set; } = new();
+
         [Display(Name = "الإحصائيات")]
         public InventoryStatistics Statistics { get; set; } = new();
 

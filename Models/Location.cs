@@ -70,6 +70,24 @@ namespace WarehouseManagement.Models
         [Display(Name = "تاريخ الإنشاء")]
         public DateTime CreatedDate { get; set; } = DateTime.Now;
 
+        // Backwards-compatible aliases expected by views
+        public DateTime CreatedAt
+        {
+            get => CreatedDate;
+            set => CreatedDate = value;
+        }
+
+        public DateTime? UpdatedAt { get; set; }
+
+        // Some views expect ManagerName and Phone names
+        public string? ManagerName
+        {
+            get => ResponsiblePerson;
+            set => ResponsiblePerson = value;
+        }
+
+        public string? Phone { get; set; }
+
         // Navigation Properties
         public virtual ICollection<MaterialStock> Stocks { get; set; } = new List<MaterialStock>();
         public virtual ICollection<Purchase> Purchases { get; set; } = new List<Purchase>();

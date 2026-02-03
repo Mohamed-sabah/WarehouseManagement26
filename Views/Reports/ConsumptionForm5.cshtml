@@ -1,0 +1,308 @@
+@using YourProject.ViewModels.Reports
+@model ConsumptionForm5ViewModel
+@{
+    ViewData["Title"] = "نموذج رقم (5)";
+    ViewData["Subtitle"] = "سجل الاستهلاك والصرف";
+    Layout = "_Layout";
+}
+
+<div class="page-header d-flex justify-content-between align-items-center mb-4 no-print">
+    <div>
+        <h1><i class="fas fa-file-invoice me-2"></i>نموذج رقم (5)</h1>
+        <small class="text-muted">سجل الاستهلاك والصرف - الاستمارة الرسمية</small>
+    </div>
+    <div>
+        <a asp-action="Index" class="btn btn-secondary">
+            <i class="fas fa-arrow-right me-1"></i>العودة
+        </a>
+        <button onclick="window.print()" class="btn btn-info">
+            <i class="fas fa-print me-1"></i>طباعة
+        </button>
+        <a asp-action="ExportForm5" asp-route-startDate="@Model.StartDate.ToString("yyyy-MM-dd")" 
+           asp-route-endDate="@Model.EndDate.ToString("yyyy-MM-dd")" class="btn btn-success">
+            <i class="fas fa-file-excel me-1"></i>تصدير Excel
+        </a>
+    </div>
+</div>
+
+<!-- Filter Card -->
+<div class="card mb-4 no-print">
+    <div class="card-header">
+        <i class="fas fa-filter me-2"></i>خيارات الفترة
+    </div>
+    <div class="card-body">
+        <form asp-action="ConsumptionForm5" method="get" class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label">من تاريخ</label>
+                <input type="date" name="startDate" class="form-control" value="@Model.StartDate.ToString("yyyy-MM-dd")" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">إلى تاريخ</label>
+                <input type="date" name="endDate" class="form-control" value="@Model.EndDate.ToString("yyyy-MM-dd")" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">الجهة المستلمة</label>
+                <select name="departmentId" class="form-select">
+                    <option value="">-- جميع الجهات --</option>
+                    @foreach (var dept in ViewBag.Departments as IEnumerable<SelectListItem>)
+                    {
+                        <option value="@dept.Value" selected="@(dept.Value == Model.DepartmentId?.ToString())">@dept.Text</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-3 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="fas fa-search me-1"></i>عرض التقرير
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Official Form -->
+<div class="card official-form">
+    <div class="card-body">
+        <!-- Header Section -->
+        <div class="row text-center mb-4">
+            <div class="col-4 text-end">
+                <p class="mb-1">الرقم: ____________</p>
+                <p class="mb-0">التاريخ: @DateTime.Now.ToString("yyyy/MM/dd")</p>
+            </div>
+            <div class="col-4">
+                <h4 class="mb-1">جمهورية العراق</h4>
+                <h5 class="mb-1">@Model.MinistryName</h5>
+                <h5 class="mb-0">@Model.InstitutionName</h5>
+            </div>
+            <div class="col-4 text-start">
+                <p class="mb-1">نموذج رقم (5)</p>
+                <p class="mb-0">سجل المخازن</p>
+            </div>
+        </div>
+
+        <div class="text-center mb-4">
+            <h3 class="border-bottom border-dark pb-2 d-inline-block">سجل الاستهلاك والصرف</h3>
+            <h5>للفترة من @Model.StartDate.ToString("yyyy/MM/dd") إلى @Model.EndDate.ToString("yyyy/MM/dd")</h5>
+        </div>
+
+        <!-- Form Info -->
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <p><strong>اسم المخزن:</strong> @Model.WarehouseName</p>
+            </div>
+            <div class="col-md-4">
+                <p><strong>أمين المخزن:</strong> @Model.WarehouseManager</p>
+            </div>
+            <div class="col-md-4">
+                <p><strong>عدد العمليات:</strong> @Model.Items.Count</p>
+            </div>
+        </div>
+
+        <!-- Main Table -->
+        <div class="table-responsive">
+            <table class="table table-bordered official-table">
+                <thead>
+                    <tr class="table-dark">
+                        <th class="text-center" style="width: 40px;">ت</th>
+                        <th class="text-center" style="width: 90px;">التاريخ</th>
+                        <th class="text-center" style="width: 80px;">رقم الصرف</th>
+                        <th class="text-center" style="width: 80px;">رمز المادة</th>
+                        <th class="text-center">اسم المادة ومواصفاتها</th>
+                        <th class="text-center" style="width: 50px;">الوحدة</th>
+                        <th class="text-center" style="width: 60px;">الكمية</th>
+                        <th class="text-center" style="width: 80px;">سعر الوحدة</th>
+                        <th class="text-center" style="width: 90px;">القيمة</th>
+                        <th class="text-center">الجهة المستلمة</th>
+                        <th class="text-center" style="width: 80px;">المستلم</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @{
+                        int index = 1;
+                        decimal totalQuantity = 0;
+                        decimal totalValue = 0;
+                    }
+                    @foreach (var item in Model.Items.OrderBy(i => i.ConsumptionDate))
+                    {
+                        totalQuantity += item.Quantity;
+                        totalValue += item.TotalValue;
+                        <tr>
+                            <td class="text-center">@(index++)</td>
+                            <td class="text-center">@item.ConsumptionDate.ToString("yyyy/MM/dd")</td>
+                            <td class="text-center"><small>@item.VoucherNumber</small></td>
+                            <td class="text-center"><small>@item.MaterialCode</small></td>
+                            <td>@item.MaterialName</td>
+                            <td class="text-center">@item.Unit</td>
+                            <td class="text-center">@item.Quantity</td>
+                            <td class="text-end">@item.UnitPrice.ToString("N0")</td>
+                            <td class="text-end">@item.TotalValue.ToString("N0")</td>
+                            <td>@item.DepartmentName</td>
+                            <td class="text-center"><small>@item.ReceiverName</small></td>
+                        </tr>
+                    }
+                </tbody>
+                <tfoot>
+                    <tr class="table-dark fw-bold">
+                        <td colspan="6" class="text-center">المجموع الكلي</td>
+                        <td class="text-center">@totalQuantity</td>
+                        <td></td>
+                        <td class="text-end">@totalValue.ToString("N0")</td>
+                        <td colspan="2"></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+
+        <!-- Summary by Department -->
+        <div class="mt-4 mb-4">
+            <h5 class="border-bottom pb-2">ملخص حسب الجهة المستلمة</h5>
+            <table class="table table-bordered table-sm">
+                <thead class="table-secondary">
+                    <tr>
+                        <th>الجهة المستلمة</th>
+                        <th class="text-center">عدد العمليات</th>
+                        <th class="text-center">إجمالي الكمية</th>
+                        <th class="text-center">إجمالي القيمة</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var dept in Model.Items.GroupBy(i => i.DepartmentName).OrderByDescending(g => g.Sum(i => i.TotalValue)))
+                    {
+                        <tr>
+                            <td>@dept.Key</td>
+                            <td class="text-center">@dept.Count()</td>
+                            <td class="text-center">@dept.Sum(i => i.Quantity)</td>
+                            <td class="text-end">@dept.Sum(i => i.TotalValue).ToString("N0")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Summary by Material -->
+        <div class="mb-4">
+            <h5 class="border-bottom pb-2">ملخص حسب المادة</h5>
+            <table class="table table-bordered table-sm">
+                <thead class="table-secondary">
+                    <tr>
+                        <th>رمز المادة</th>
+                        <th>اسم المادة</th>
+                        <th class="text-center">عدد العمليات</th>
+                        <th class="text-center">إجمالي الكمية</th>
+                        <th class="text-center">إجمالي القيمة</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var mat in Model.Items.GroupBy(i => new { i.MaterialCode, i.MaterialName }).OrderByDescending(g => g.Sum(i => i.TotalValue)).Take(15))
+                    {
+                        <tr>
+                            <td><code>@mat.Key.MaterialCode</code></td>
+                            <td>@mat.Key.MaterialName</td>
+                            <td class="text-center">@mat.Count()</td>
+                            <td class="text-center">@mat.Sum(i => i.Quantity)</td>
+                            <td class="text-end">@mat.Sum(i => i.TotalValue).ToString("N0")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Notes Section -->
+        <div class="mb-4">
+            <h5 class="border-bottom pb-2">ملاحظات</h5>
+            <div class="border p-3" style="min-height: 80px;">
+                @(Model.Notes ?? "")
+            </div>
+        </div>
+
+        <!-- Signatures Section -->
+        <div class="signatures-section mt-5">
+            <div class="row text-center">
+                <div class="col-4">
+                    <div class="border-bottom border-dark mb-2" style="height: 70px;"></div>
+                    <p class="fw-bold mb-0">أمين المخزن</p>
+                    <p class="small text-muted mb-0">الاسم:</p>
+                    <p class="small text-muted mb-0">التوقيع:</p>
+                    <p class="small text-muted mb-0">التاريخ:</p>
+                </div>
+                <div class="col-4">
+                    <div class="border-bottom border-dark mb-2" style="height: 70px;"></div>
+                    <p class="fw-bold mb-0">المحاسب</p>
+                    <p class="small text-muted mb-0">الاسم:</p>
+                    <p class="small text-muted mb-0">التوقيع:</p>
+                    <p class="small text-muted mb-0">التاريخ:</p>
+                </div>
+                <div class="col-4">
+                    <div class="border-bottom border-dark mb-2" style="height: 70px;"></div>
+                    <p class="fw-bold mb-0">المدير المالي / الإداري</p>
+                    <p class="small text-muted mb-0">الاسم:</p>
+                    <p class="small text-muted mb-0">التوقيع:</p>
+                    <p class="small text-muted mb-0">التاريخ:</p>
+                </div>
+            </div>
+
+            <div class="row mt-4">
+                <div class="col-12 text-center">
+                    <p class="mb-1">مصادقة رئيس الدائرة</p>
+                    <div class="d-inline-block border-bottom border-dark" style="width: 250px; height: 50px;"></div>
+                    <p class="mt-2 mb-0">ختم المؤسسة</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Styles {
+    <style>
+        .official-form {
+            font-family: 'Traditional Arabic', Arial, sans-serif;
+        }
+        
+        .official-table {
+            font-size: 0.8rem;
+        }
+        
+        .official-table th, .official-table td {
+            vertical-align: middle;
+            padding: 0.35rem;
+        }
+        
+        @@media print {
+            .no-print { display: none !important; }
+            
+            .official-form {
+                border: none !important;
+                box-shadow: none !important;
+            }
+            
+            .card {
+                border: 1px solid #000 !important;
+            }
+            
+            .table-dark {
+                background-color: #ddd !important;
+                color: #000 !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            
+            .table-secondary {
+                background-color: #eee !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            
+            .signatures-section {
+                page-break-inside: avoid;
+            }
+            
+            body {
+                font-size: 10px;
+            }
+            
+            @@page {
+                margin: 0.8cm;
+                size: A4 landscape;
+            }
+        }
+    </style>
+}

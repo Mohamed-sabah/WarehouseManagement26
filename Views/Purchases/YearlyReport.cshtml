@@ -1,0 +1,251 @@
+@model PurchaseYearlyReportViewModel
+@{
+    ViewData["Title"] = $"تقرير المشتريات السنوي - {Model.Year}";
+    ViewData["Subtitle"] = "ملخص عمليات الشراء والتوريد";
+}
+
+<div class="page-header d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1><i class="fas fa-chart-bar me-2"></i>التقرير السنوي للمشتريات</h1>
+        <small class="text-muted">سنة @Model.Year</small>
+    </div>
+    <div>
+        <a asp-action="Index" class="btn btn-secondary">
+            <i class="fas fa-arrow-right me-1"></i>العودة
+        </a>
+        <button onclick="window.print()" class="btn btn-info">
+            <i class="fas fa-print me-1"></i>طباعة
+        </button>
+    </div>
+</div>
+
+<!-- Year Filter -->
+<div class="card mb-4 no-print">
+    <div class="card-body">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label">اختر السنة</label>
+                <select name="year" class="form-select" onchange="this.form.submit()">
+                    @foreach (var y in Model.AvailableYears)
+                    {
+                        <option value="@y" selected="@(y == Model.Year)">@y</option>
+                    }
+                </select>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white text-center p-3">
+            <h3 class="mb-0">@Model.TotalPurchases</h3>
+            <small>عدد العمليات</small>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white text-center p-3">
+            <h3 class="mb-0">@Model.TotalQuantity</h3>
+            <small>إجمالي الكمية</small>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white text-center p-3">
+            <h3 class="mb-0">@Model.TotalValue.ToString("N0")</h3>
+            <small>القيمة الإجمالية (د.ع)</small>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-white text-center p-3">
+            <h3 class="mb-0">@Model.UniqueMaterials</h3>
+            <small>عدد المواد</small>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- By Category -->
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <i class="fas fa-tags me-2"></i>التوزيع حسب الفئة
+            </div>
+            <div class="card-body p-0">
+                @if (Model.ByCategory.Any())
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>الفئة</th>
+                                    <th>العمليات</th>
+                                    <th>الكمية</th>
+                                    <th>القيمة</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var cat in Model.ByCategory.OrderByDescending(c => c.Value.TotalValue))
+                                {
+                                    <tr>
+                                        <td>@cat.Key</td>
+                                        <td>@cat.Value.Count</td>
+                                        <td>@cat.Value.TotalQuantity</td>
+                                        <td>@cat.Value.TotalValue.ToString("N0")</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center py-4 text-muted">لا توجد بيانات</div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- By Month -->
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <i class="fas fa-calendar-alt me-2"></i>التوزيع حسب الشهر
+            </div>
+            <div class="card-body p-0">
+                @if (Model.ByMonth?.Any() == true)
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>الشهر</th>
+                                    <th>العمليات</th>
+                                    <th>الكمية</th>
+                                    <th>القيمة</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @{
+                                    string[] monthNames = { "", "يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", 
+                                                          "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر" };
+                                }
+                                @for (int m = 1; m <= 12; m++)
+                                {
+                                    if (Model.ByMonth.ContainsKey(m))
+                                    {
+                                        var month = Model.ByMonth[m];
+                                        <tr>
+                                            <td>@monthNames[m]</td>
+                                            <td>@month.Count</td>
+                                            <td>@month.TotalQuantity</td>
+                                            <td>@month.TotalValue.ToString("N0")</td>
+                                        </tr>
+                                    }
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center py-4 text-muted">لا توجد بيانات</div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Detailed List -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="fas fa-list me-2"></i>تفاصيل المشتريات</span>
+        <span class="badge bg-primary">@Model.Purchases.Count عملية</span>
+    </div>
+    <div class="card-body p-0">
+        @if (Model.Purchases.Any())
+        {
+            <div class="table-responsive">
+                <table class="table table-hover table-sm mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>#</th>
+                            <th>التاريخ</th>
+                            <th>الرمز</th>
+                            <th>المادة</th>
+                            <th>الفئة</th>
+                            <th>الموقع</th>
+                            <th>الكمية</th>
+                            <th>سعر الوحدة</th>
+                            <th>الإجمالي</th>
+                            <th>الطريقة</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @{
+                            int index = 1;
+                        }
+                        @foreach (var p in Model.Purchases)
+                        {
+                            <tr>
+                                <td>@(index++)</td>
+                                <td>@p.PurchaseDate.ToString("MM/dd")</td>
+                                <td><code>@p.Material.Code</code></td>
+                                <td>@p.Material.Name</td>
+                                <td>@(p.Material.Category?.Name ?? "-")</td>
+                                <td>@p.Location?.Name</td>
+                                <td>@p.Quantity</td>
+                                <td>@p.UnitPrice.ToString("N0")</td>
+                                <td><strong>@p.TotalPrice.ToString("N0")</strong></td>
+                                <td>
+                                    <span class="badge @(p.Method == AcquisitionMethod.Purchase ? "bg-primary" : "bg-secondary")">
+                                        @(p.Method == AcquisitionMethod.Purchase ? "شراء" : p.Method.ToString())
+                                    </span>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                    <tfoot class="table-light">
+                        <tr class="fw-bold">
+                            <td colspan="6">المجموع الكلي</td>
+                            <td>@Model.TotalQuantity</td>
+                            <td></td>
+                            <td>@Model.TotalValue.ToString("N0")</td>
+                            <td></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="text-center py-5">
+                <i class="fas fa-inbox fa-4x text-muted mb-3"></i>
+                <h5>لا توجد مشتريات في هذه السنة</h5>
+            </div>
+        }
+    </div>
+</div>
+
+<!-- Print Footer -->
+<div class="d-none d-print-block mt-4">
+    <hr />
+    <div class="row">
+        <div class="col-6">
+            <p>تاريخ الطباعة: @DateTime.Now.ToString("yyyy/MM/dd HH:mm")</p>
+        </div>
+        <div class="col-6 text-end">
+            <p>نظام إدارة المخازن</p>
+        </div>
+    </div>
+</div>
+
+@section Styles {
+    <style>
+        @@media print {
+            .no-print { display: none !important; }
+            .card { break-inside: avoid; }
+            table { font-size: 10pt; }
+        }
+    </style>
+}

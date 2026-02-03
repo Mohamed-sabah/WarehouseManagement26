@@ -1,0 +1,257 @@
+@model InventoryReportViewModel
+@{
+    ViewData["Title"] = "نموذج رقم (2) - الجرد السنوي";
+    ViewData["Subtitle"] = $"سنة {Model.Year}";
+}
+
+<div class="page-header d-flex justify-content-between align-items-center mb-4 no-print">
+    <div>
+        <h1><i class="fas fa-file-alt me-2"></i>نموذج رقم (2)</h1>
+        <small class="text-muted">الجرد السنوي للمواد - @Model.Year</small>
+    </div>
+    <div>
+        <a asp-action="Index" class="btn btn-secondary">
+            <i class="fas fa-arrow-right me-1"></i>العودة
+        </a>
+        <button onclick="window.print()" class="btn btn-info">
+            <i class="fas fa-print me-1"></i>طباعة
+        </button>
+        <a asp-action="ExportReport" asp-route-year="@Model.Year" class="btn btn-success">
+            <i class="fas fa-file-excel me-1"></i>تصدير Excel
+        </a>
+    </div>
+</div>
+
+<!-- Print Header -->
+<div class="print-header text-center mb-4" style="display: none;">
+    <h4>جمهورية العراق</h4>
+    <h5>@Model.InstitutionName</h5>
+    <h3 class="mt-3">نموذج رقم (2)</h3>
+    <h4>الجرد السنوي للمواد والأصناف المخزنية</h4>
+    <p>لسنة @Model.Year</p>
+</div>
+
+<!-- Report Info -->
+<div class="card mb-4 no-print">
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-3">
+                <strong>المؤسسة:</strong> @Model.InstitutionName
+            </div>
+            <div class="col-md-3">
+                <strong>القسم/الدائرة:</strong> @Model.DepartmentName
+            </div>
+                <div class="col-md-3">
+                    <strong>تاريخ الجرد:</strong> @((Model.InventoryDate ?? DateTime.Now).ToString("yyyy/MM/dd"))
+                </div>
+            <div class="col-md-3">
+                <strong>رقم التقرير:</strong> @Model.ReportNumber
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row mb-4 no-print">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white text-center p-3">
+            <h3 class="mb-0">@Model.Items.Count</h3>
+            <small>إجمالي المواد</small>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white text-center p-3">
+            <h3 class="mb-0">@Model.Items.Count(i => i.Difference == 0)</h3>
+            <small>مطابق</small>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-danger text-white text-center p-3">
+            <h3 class="mb-0">@Model.Items.Count(i => i.Difference < 0)</h3>
+            <small>نقص</small>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-white text-center p-3">
+            <h3 class="mb-0">@Model.Items.Count(i => i.Difference > 0)</h3>
+            <small>زيادة</small>
+        </div>
+    </div>
+</div>
+
+<!-- Main Report Table -->
+<div class="card">
+    <div class="card-header bg-dark text-white">
+        <i class="fas fa-table me-2"></i>بيانات الجرد السنوي
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-bordered table-striped mb-0 report-table">
+                <thead class="table-dark">
+                    <tr>
+                        <th rowspan="2" class="text-center align-middle">ت</th>
+                        <th rowspan="2" class="text-center align-middle">رمز المادة</th>
+                        <th rowspan="2" class="text-center align-middle">اسم المادة</th>
+                        <th rowspan="2" class="text-center align-middle">الوحدة</th>
+                        <th rowspan="2" class="text-center align-middle">الفئة</th>
+                        <th colspan="2" class="text-center">الرصيد حسب السجلات</th>
+                        <th colspan="2" class="text-center">الرصيد الفعلي</th>
+                        <th colspan="2" class="text-center">الفرق</th>
+                        <th rowspan="2" class="text-center align-middle">الحالة</th>
+                        <th rowspan="2" class="text-center align-middle">ملاحظات</th>
+                    </tr>
+                    <tr>
+                        <th class="text-center">كمية</th>
+                        <th class="text-center">قيمة</th>
+                        <th class="text-center">كمية</th>
+                        <th class="text-center">قيمة</th>
+                        <th class="text-center">كمية</th>
+                        <th class="text-center">قيمة</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @{
+                        int index = 1;
+                        decimal totalRecordedValue = 0;
+                        decimal totalActualValue = 0;
+                    }
+                    @foreach (var item in Model.Items.OrderBy(i => i.CategoryName).ThenBy(i => i.MaterialCode))
+                    {
+                        var recordedValue = item.RecordedQuantity * item.UnitPrice;
+                        var actualValue = item.ActualQuantity * item.UnitPrice;
+                        var diffValue = actualValue - recordedValue;
+                        totalRecordedValue += recordedValue;
+                        totalActualValue += actualValue;
+                        
+                        <tr class="@(item.Difference < 0 ? "table-danger" : item.Difference > 0 ? "table-warning" : "")">
+                            <td class="text-center">@(index++)</td>
+                            <td><code>@item.MaterialCode</code></td>
+                            <td>@item.MaterialName</td>
+                            <td class="text-center">@item.Unit</td>
+                            <td>@item.CategoryName</td>
+                            <td class="text-center">@item.RecordedQuantity</td>
+                            <td class="text-end">@recordedValue.ToString("N0")</td>
+                            <td class="text-center">@item.ActualQuantity</td>
+                            <td class="text-end">@actualValue.ToString("N0")</td>
+                            <td class="text-center">
+                                @if (item.Difference != 0)
+                                {
+                                    <span class="badge @(item.Difference < 0 ? "bg-danger" : "bg-warning")">
+                                        @(item.Difference > 0 ? "+" : "")@item.Difference
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-success">0</span>
+                                }
+                            </td>
+                            <td class="text-end">
+                                @if (diffValue != 0)
+                                {
+                                    <span class="@(diffValue < 0 ? "text-danger" : "text-warning")">
+                                        @(diffValue > 0 ? "+" : "")@diffValue.ToString("N0")
+                                    </span>
+                                }
+                            </td>
+                            <td class="text-center">
+                                @switch (item.Condition)
+                                {
+                                    case MaterialCondition.Excellent:
+                                        <span class="badge bg-success">ممتازة</span>
+                                        break;
+                                    case MaterialCondition.Good:
+                                        <span class="badge bg-info">جيدة</span>
+                                        break;
+                                    case MaterialCondition.Average:
+                                        <span class="badge bg-warning">متوسطة</span>
+                                        break;
+                                    case MaterialCondition.Poor:
+                                        <span class="badge bg-secondary">ضعيفة</span>
+                                        break;
+                                    case MaterialCondition.Damaged:
+                                        <span class="badge bg-danger">تالفة</span>
+                                        break;
+                                }
+                            </td>
+                            <td>@item.Notes</td>
+                        </tr>
+                    }
+                </tbody>
+                <tfoot class="table-secondary fw-bold">
+                    <tr>
+                        <td colspan="6" class="text-start">المجموع الكلي</td>
+                        <td class="text-end">@totalRecordedValue.ToString("N0")</td>
+                        <td></td>
+                        <td class="text-end">@totalActualValue.ToString("N0")</td>
+                        <td colspan="2" class="text-center">
+                            @{
+                                var totalDiff = totalActualValue - totalRecordedValue;
+                            }
+                            <span class="@(totalDiff < 0 ? "text-danger" : totalDiff > 0 ? "text-warning" : "text-success")">
+                                @(totalDiff > 0 ? "+" : "")@totalDiff.ToString("N0")
+                            </span>
+                        </td>
+                        <td colspan="2"></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Signatures Section -->
+<div class="card mt-4 signatures-section">
+    <div class="card-header">
+        <i class="fas fa-signature me-2"></i>التوقيعات
+    </div>
+    <div class="card-body">
+        <div class="row text-center">
+            <div class="col-md-3">
+                <div class="border-bottom border-dark mb-2" style="height: 60px;"></div>
+                <strong>أمين المخزن</strong>
+                <p class="text-muted mb-0">الاسم والتوقيع</p>
+            </div>
+            <div class="col-md-3">
+                <div class="border-bottom border-dark mb-2" style="height: 60px;"></div>
+                <strong>لجنة الجرد</strong>
+                <p class="text-muted mb-0">رئيس اللجنة</p>
+            </div>
+            <div class="col-md-3">
+                <div class="border-bottom border-dark mb-2" style="height: 60px;"></div>
+                <strong>المحاسب</strong>
+                <p class="text-muted mb-0">الاسم والتوقيع</p>
+            </div>
+            <div class="col-md-3">
+                <div class="border-bottom border-dark mb-2" style="height: 60px;"></div>
+                <strong>المدير المالي</strong>
+                <p class="text-muted mb-0">الاسم والتوقيع</p>
+            </div>
+        </div>
+        <div class="row mt-4">
+            <div class="col-12 text-center">
+                <p class="mb-1">تاريخ التصديق: _____ / _____ / _____</p>
+                <p class="mb-0">ختم المؤسسة</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Styles {
+    <style>
+        .report-table th, .report-table td {
+            vertical-align: middle;
+            font-size: 0.9rem;
+        }
+        
+        @@media print {
+            .no-print { display: none !important; }
+            .print-header { display: block !important; }
+            .card { border: 1px solid #000 !important; }
+            .card-header { background: #f0f0f0 !important; color: #000 !important; }
+            .table-dark { background: #ddd !important; color: #000 !important; }
+            .badge { border: 1px solid #000; }
+            .signatures-section { page-break-inside: avoid; }
+            body { font-size: 12px; }
+        }
+    </style>
+}

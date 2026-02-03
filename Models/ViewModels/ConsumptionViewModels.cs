@@ -113,6 +113,15 @@ namespace WarehouseManagement.Models.ViewModels
         [Display(Name = "عناصر الاستهلاك")]
         public List<ConsumptionRecord> Records { get; set; } = new();
 
+        // Compatibility properties used by views
+        public DateTime StartDate { get; set; } = DateTime.Now;
+        public DateTime EndDate { get; set; } = DateTime.Now;
+        public string InstitutionName { get; set; } = string.Empty;
+        public int? CategoryId { get; set; }
+
+        // Flat list of items expected by the report view
+        public List<ConsumptionReportItemViewModel> Items { get; set; } = new();
+
         [Display(Name = "الإحصائيات")]
         public ConsumptionStatistics Statistics { get; set; } = new();
 
@@ -121,6 +130,22 @@ namespace WarehouseManagement.Models.ViewModels
         public string OrganizationName { get; set; } = string.Empty;
         public string PreparedBy { get; set; } = string.Empty;
         public string CommitteeMembers { get; set; } = string.Empty;
+    }
+
+    public class ConsumptionReportItemViewModel
+    {
+        public DateTime ConsumptionDate { get; set; }
+        public string VoucherNumber { get; set; } = string.Empty;
+        public string MaterialCode { get; set; } = string.Empty;
+        public string MaterialName { get; set; } = string.Empty;
+        public string Unit { get; set; } = string.Empty;
+        public int Quantity { get; set; }
+        public decimal UnitPrice { get; set; }
+        public decimal TotalValue { get; set; }
+        public string DepartmentName { get; set; } = string.Empty;
+        public string? CategoryName { get; set; }
+        public string? Purpose { get; set; }
+        public string? ReceiverName { get; set; }
     }
 
     /// <summary>

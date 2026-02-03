@@ -43,6 +43,20 @@ namespace WarehouseManagement.Models
         [Display(Name = "تاريخ الإنشاء")]
         public DateTime CreatedDate { get; set; } = DateTime.Now;
 
+        /// <summary>
+        /// Backwards-compatible alias for views that expect CreatedAt
+        /// </summary>
+        public DateTime CreatedAt
+        {
+            get => CreatedDate;
+            set => CreatedDate = value;
+        }
+
+        /// <summary>
+        /// Optional updated timestamp used by some views (alias UpdatedAt)
+        /// </summary>
+        public DateTime? UpdatedAt { get; set; }
+
         // Navigation Properties
         public virtual Category? ParentCategory { get; set; }
         public virtual ICollection<Category> SubCategories { get; set; } = new List<Category>();

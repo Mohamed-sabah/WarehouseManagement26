@@ -1,0 +1,249 @@
+@model Category
+@{
+    ViewData["Title"] = "تفاصيل الفئة";
+    ViewData["Subtitle"] = Model.Name;
+}
+
+<div class="page-header d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1><i class="fas fa-folder-open me-2"></i>@Model.Name</h1>
+        <small class="text-muted">تفاصيل الفئة</small>
+    </div>
+    <div>
+        <a asp-action="Index" class="btn btn-secondary">
+            <i class="fas fa-arrow-right me-1"></i>العودة للفئات
+        </a>
+        <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning">
+            <i class="fas fa-edit me-1"></i>تعديل
+        </a>
+        <button onclick="window.print()" class="btn btn-info">
+            <i class="fas fa-print me-1"></i>طباعة
+        </button>
+    </div>
+</div>
+
+<!-- Category Info Card -->
+<div class="card mb-4">
+    <div class="card-header">
+        <i class="fas fa-info-circle me-2"></i>معلومات الفئة
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <table class="table table-borderless">
+                    <tr>
+                        <th style="width: 150px;">اسم الفئة:</th>
+                        <td><strong>@Model.Name</strong></td>
+                    </tr>
+                    <tr>
+                        <th>الرمز:</th>
+                        <td><code>@Model.Code</code></td>
+                    </tr>
+                    <tr>
+                        <th>الوصف:</th>
+                        <td>@(Model.Description ?? "لا يوجد وصف")</td>
+                    </tr>
+                </table>
+            </div>
+            <div class="col-md-6">
+                <table class="table table-borderless">
+                    <tr>
+                        <th style="width: 150px;">الحالة:</th>
+                        <td>
+                            @if (Model.IsActive)
+                            {
+                                <span class="badge bg-success">نشطة</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary">غير نشطة</span>
+                            }
+                        </td>
+                    </tr>
+                    @{
+                        // Runtime-safe retrieval of created/updated date properties (avoids compile-time CS1061)
+                        string createdDisplay = "-";
+                        string updatedDisplay = "-";
+                        var createdPropNames = new[] { "CreatedAt", "CreatedOn", "CreatedDate", "DateCreated" };
+                        var updatedPropNames = new[] { "UpdatedAt", "UpdatedOn", "UpdatedDate", "DateUpdated" };
+                        var modelType = Model?.GetType();
+                        if (modelType != null)
+                        {
+                            foreach (var name in createdPropNames)
+                            {
+                                var prop = modelType.GetProperty(name);
+                                if (prop != null)
+                                {
+                                    var val = prop.GetValue(Model);
+                                    if (val is DateTime dt)
+                                    {
+                                        createdDisplay = dt.ToString("yyyy/MM/dd");
+                                    }
+                                    else if (val != null)
+                                    {
+                                        createdDisplay = val.ToString();
+                                    }
+                                    break;
+                                }
+                            }
+
+                            foreach (var name in updatedPropNames)
+                            {
+                                var prop = modelType.GetProperty(name);
+                                if (prop != null)
+                                {
+                                    var val = prop.GetValue(Model);
+                                    if (val is DateTime dt)
+                                    {
+                                        updatedDisplay = dt.ToString("yyyy/MM/dd");
+                                    }
+                                    else if (val != null)
+                                    {
+                                        updatedDisplay = val.ToString();
+                                    }
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    <tr>
+                        <th>تاريخ الإنشاء:</th>
+                        <td>@createdDisplay</td>
+                    </tr>
+                    <tr>
+                        <th>آخر تعديل:</th>
+                        <td>@updatedDisplay</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white text-center p-3">
+            <h3 class="mb-0">@(Model.Materials?.Count ?? 0)</h3>
+            <small>عدد المواد</small>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white text-center p-3">
+            <h3 class="mb-0">@(Model.Materials?.Sum(m => m.Stocks?.Sum(s => s.Quantity) ?? 0) ?? 0)</h3>
+            <small>إجمالي المخزون</small>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white text-center p-3">
+            <h3 class="mb-0">@((Model.Materials?.Sum(m => m.Stocks?.Sum(s => s.CurrentValue) ?? 0) ?? 0m).ToString("N0"))</h3>
+            <small>القيمة الإجمالية (د.ع)</small>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-white text-center p-3">
+            <h3 class="mb-0">@(Model.Materials?.Count(m => m.Stocks?.Any(s => s.Quantity <= m.MinimumStock) ?? false) ?? 0)</h3>
+            <small>مخزون منخفض</small>
+        </div>
+    </div>
+</div>
+
+<!-- Materials List -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="fas fa-boxes me-2"></i>المواد في هذه الفئة</span>
+        <a asp-controller="Materials" asp-action="Create" asp-route-categoryId="@Model.Id" class="btn btn-success btn-sm">
+            <i class="fas fa-plus me-1"></i>إضافة مادة
+        </a>
+    </div>
+    <div class="card-body p-0">
+        @if (Model.Materials?.Any() == true)
+        {
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>#</th>
+                            <th>الرمز</th>
+                            <th>اسم المادة</th>
+                            <th>الوحدة</th>
+                            <th class="text-center">المخزون الحالي</th>
+                            <th class="text-center">الحد الأدنى</th>
+                            <th class="text-center">الحالة</th>
+                            <th class="text-center">الإجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @{
+                            int index = 1;
+                        }
+                        @foreach (var material in Model.Materials.OrderBy(m => m.Name))
+                        {
+                            var totalStock = material.Stocks?.Sum(s => s.Quantity) ?? 0;
+                            var isLowStock = totalStock <= material.MinimumStock;
+                            <tr class="@(isLowStock ? "table-warning" : "")">
+                                <td>@(index++)</td>
+                                <td><code>@material.Code</code></td>
+                                <td>
+                                    <a asp-controller="Materials" asp-action="Details" asp-route-id="@material.Id">
+                                        @material.Name
+                                    </a>
+                                </td>
+                                <td>@material.Unit</td>
+                                <td class="text-center">
+                                    <span class="@(isLowStock ? "text-danger fw-bold" : "")">@totalStock</span>
+                                </td>
+                                <td class="text-center">@material.MinimumStock</td>
+                                <td class="text-center">
+                                    @if (totalStock == 0)
+                                    {
+                                        <span class="badge bg-danger">نفذ</span>
+                                    }
+                                    else if (isLowStock)
+                                    {
+                                        <span class="badge bg-warning">منخفض</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-success">متوفر</span>
+                                    }
+                                </td>
+                                <td class="text-center">
+                                    <div class="btn-group btn-group-sm">
+                                        <a asp-controller="Materials" asp-action="Details" asp-route-id="@material.Id" 
+                                           class="btn btn-outline-primary" title="التفاصيل">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a asp-controller="Materials" asp-action="Edit" asp-route-id="@material.Id" 
+                                           class="btn btn-outline-warning" title="تعديل">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="text-center py-5">
+                <i class="fas fa-inbox fa-4x text-muted mb-3"></i>
+                <h5>لا توجد مواد في هذه الفئة</h5>
+                <p class="text-muted">قم بإضافة مواد جديدة لهذه الفئة</p>
+                <a asp-controller="Materials" asp-action="Create" asp-route-categoryId="@Model.Id" class="btn btn-primary">
+                    <i class="fas fa-plus me-1"></i>إضافة مادة
+                </a>
+            </div>
+        }
+    </div>
+</div>
+
+@section Styles {
+    <style>
+        @@media print {
+            .btn, .btn-group { display: none !important; }
+        }
+    </style>
+}

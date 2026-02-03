@@ -1,0 +1,216 @@
+@model MaterialsValueReportViewModel
+@{
+    ViewData["Title"] = "تقرير قيمة المواد";
+    ViewData["Subtitle"] = "القيمة الإجمالية للمخزون";
+}
+
+<div class="page-header d-flex justify-content-between align-items-center mb-4 no-print">
+    <div>
+        <h1><i class="fas fa-coins me-2"></i>تقرير قيمة المواد</h1>
+        <small class="text-muted">تقييم المخزون حسب المواد</small>
+    </div>
+    <div>
+        <a asp-action="Index" class="btn btn-secondary">
+            <i class="fas fa-arrow-right me-1"></i>العودة
+        </a>
+        <button onclick="window.print()" class="btn btn-info">
+            <i class="fas fa-print me-1"></i>طباعة
+        </button>
+        <a asp-action="ExportMaterialsValue" class="btn btn-success">
+            <i class="fas fa-file-excel me-1"></i>تصدير Excel
+        </a>
+    </div>
+</div>
+
+<!-- Print Header -->
+<div class="print-header text-center mb-4" style="display: none;">
+    <h4>@Model.InstitutionName</h4>
+    <h3>تقرير قيمة المواد والمخزون</h3>
+    <p>بتاريخ @DateTime.Now.ToString("yyyy/MM/dd")</p>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white text-center p-3">
+            <h3 class="mb-0">@Model.Items.Count</h3>
+            <small>عدد المواد</small>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white text-center p-3">
+            <h3 class="mb-0">@Model.TotalQuantity.ToString("N0")</h3>
+            <small>إجمالي الكميات</small>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white text-center p-3">
+            <h3 class="mb-0">@Model.TotalValue.ToString("N0")</h3>
+            <small>القيمة الإجمالية (د.ع)</small>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-white text-center p-3">
+            <h3 class="mb-0">@(Model.TotalQuantity > 0 ? (Model.TotalValue / Model.TotalQuantity).ToString("N0") : "0")</h3>
+            <small>متوسط سعر الوحدة</small>
+        </div>
+    </div>
+</div>
+
+<!-- Filter Card -->
+<div class="card mb-4 no-print">
+    <div class="card-header">
+        <i class="fas fa-filter me-2"></i>خيارات التصفية
+    </div>
+    <div class="card-body">
+        <form asp-action="MaterialsValue" method="get" class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label">الفئة</label>
+                <select name="categoryId" class="form-select">
+                    <option value="">-- جميع الفئات --</option>
+                    @foreach (var cat in ViewBag.Categories as IEnumerable<Category>)
+                    {
+                        <option value="@cat.Id" selected="@(cat.Id == Model.CategoryId)">@cat.Name</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">الموقع</label>
+                <select name="locationId" class="form-select">
+                    <option value="">-- جميع المواقع --</option>
+                    @foreach (var loc in ViewBag.Locations as IEnumerable<Location>)
+                    {
+                        <option value="@loc.Id" selected="@(loc.Id == Model.LocationId)">@loc.Name</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">ترتيب حسب</label>
+                <select name="sortBy" class="form-select">
+                    <option value="value" selected="@(Model.SortBy == "value")">القيمة (الأعلى أولاً)</option>
+                    <option value="quantity" selected="@(Model.SortBy == "quantity")">الكمية (الأعلى أولاً)</option>
+                    <option value="name" selected="@(Model.SortBy == "name")">الاسم (أبجدي)</option>
+                </select>
+            </div>
+            <div class="col-md-3 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="fas fa-search me-1"></i>عرض التقرير
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Main Report Table -->
+<div class="card">
+    <div class="card-header bg-dark text-white">
+        <i class="fas fa-table me-2"></i>تفاصيل قيمة المواد
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-bordered table-striped mb-0">
+                <thead class="table-dark">
+                    <tr>
+                        <th class="text-center">ت</th>
+                        <th>رمز المادة</th>
+                        <th>اسم المادة</th>
+                        <th>الفئة</th>
+                        <th class="text-center">الوحدة</th>
+                        <th class="text-center">الكمية</th>
+                        <th class="text-center">سعر الوحدة</th>
+                        <th class="text-center">القيمة الإجمالية</th>
+                        <th class="text-center">النسبة</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @{
+                        int index = 1;
+                    }
+                    @foreach (var item in Model.Items)
+                    {
+                        var percentage = Model.TotalValue > 0 ? (item.TotalValue / Model.TotalValue * 100) : 0;
+                        <tr>
+                            <td class="text-center">@(index++)</td>
+                            <td><code>@item.MaterialCode</code></td>
+                            <td>@item.MaterialName</td>
+                            <td>@item.CategoryName</td>
+                            <td class="text-center">@item.Unit</td>
+                            <td class="text-center">@item.Quantity.ToString("N0")</td>
+                            <td class="text-end">@item.UnitPrice.ToString("N0")</td>
+                            <td class="text-end">@item.TotalValue.ToString("N0")</td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="progress flex-grow-1" style="height: 20px;">
+                                        <div class="progress-bar bg-info" style="width: @percentage%"></div>
+                                    </div>
+                                    <span class="ms-2" style="min-width: 50px;">@percentage.ToString("F1")%</span>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+                <tfoot class="table-secondary fw-bold">
+                    <tr>
+                        <td colspan="5" class="text-start">المجموع الكلي</td>
+                        <td class="text-center">@Model.TotalQuantity.ToString("N0")</td>
+                        <td></td>
+                        <td class="text-end">@Model.TotalValue.ToString("N0")</td>
+                        <td class="text-center">100%</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Summary by Category -->
+<div class="card mt-4">
+    <div class="card-header">
+        <i class="fas fa-chart-pie me-2"></i>ملخص حسب الفئة
+    </div>
+    <div class="card-body p-0">
+        <table class="table table-bordered mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>الفئة</th>
+                    <th class="text-center">عدد المواد</th>
+                    <th class="text-center">إجمالي الكمية</th>
+                    <th class="text-center">إجمالي القيمة</th>
+                    <th class="text-center">النسبة</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var cat in Model.Items.GroupBy(i => i.CategoryName).OrderByDescending(g => g.Sum(i => i.TotalValue)))
+                {
+                    var catValue = cat.Sum(i => i.TotalValue);
+                    var percentage = Model.TotalValue > 0 ? (catValue / Model.TotalValue * 100) : 0;
+                    <tr>
+                        <td>@cat.Key</td>
+                        <td class="text-center">@cat.Count()</td>
+                        <td class="text-center">@cat.Sum(i => i.Quantity).ToString("N0")</td>
+                        <td class="text-end">@catValue.ToString("N0")</td>
+                        <td>
+                            <div class="progress" style="height: 20px;">
+                                <div class="progress-bar bg-success" style="width: @percentage%">
+                                    @percentage.ToString("F1")%
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@section Styles {
+    <style>
+        @@media print {
+            .no-print { display: none !important; }
+            .print-header { display: block !important; }
+            .card { border: 1px solid #000 !important; }
+            .progress { border: 1px solid #000; }
+            body { font-size: 12px; }
+        }
+    </style>
+}

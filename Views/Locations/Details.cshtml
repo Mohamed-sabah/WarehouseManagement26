@@ -1,0 +1,229 @@
+@model Location
+@{
+    ViewData["Title"] = "تفاصيل الموقع";
+    ViewData["Subtitle"] = Model.Name;
+}
+
+<div class="page-header d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1><i class="fas fa-warehouse me-2"></i>@Model.Name</h1>
+        <small class="text-muted">تفاصيل الموقع</small>
+    </div>
+    <div>
+        <a asp-action="Index" class="btn btn-secondary">
+            <i class="fas fa-arrow-right me-1"></i>العودة للمواقع
+        </a>
+        <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning">
+            <i class="fas fa-edit me-1"></i>تعديل
+        </a>
+        <button onclick="window.print()" class="btn btn-info">
+            <i class="fas fa-print me-1"></i>طباعة
+        </button>
+    </div>
+</div>
+
+<!-- Location Info Card -->
+<div class="card mb-4">
+    <div class="card-header">
+        <i class="fas fa-info-circle me-2"></i>معلومات الموقع
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <table class="table table-borderless">
+                    <tr>
+                        <th style="width: 150px;">اسم الموقع:</th>
+                        <td><strong>@Model.Name</strong></td>
+                    </tr>
+                    <tr>
+                        <th>الرمز:</th>
+                        <td><code>@Model.Code</code></td>
+                    </tr>
+                    <tr>
+                        <th>الوصف:</th>
+                        <td>@(Model.Description ?? "لا يوجد وصف")</td>
+                    </tr>
+                    <tr>
+                        <th>العنوان:</th>
+                        <td>@(Model.Address ?? "غير محدد")</td>
+                    </tr>
+                </table>
+            </div>
+            <div class="col-md-6">
+                <table class="table table-borderless">
+                    <tr>
+                        <th style="width: 150px;">الحالة:</th>
+                        <td>
+                            @if (Model.IsActive)
+                            {
+                                <span class="badge bg-success">نشط</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary">غير نشط</span>
+                            }
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>المسؤول:</th>
+                        <td>@(Model.ManagerName ?? "غير محدد")</td>
+                    </tr>
+                    <tr>
+                        <th>تاريخ الإنشاء:</th>
+                        <td>@Model.CreatedAt.ToString("yyyy/MM/dd")</td>
+                    </tr>
+                    <tr>
+                        <th>آخر تعديل:</th>
+                        <td>@(Model.UpdatedAt?.ToString("yyyy/MM/dd") ?? "-")</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white text-center p-3">
+            <h3 class="mb-0">@(Model.Stocks?.Select(s => s.MaterialId).Distinct().Count() ?? 0)</h3>
+            <small>عدد المواد</small>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white text-center p-3">
+            <h3 class="mb-0">@(Model.Stocks?.Sum(s => s.Quantity) ?? 0)</h3>
+            <small>إجمالي الكميات</small>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white text-center p-3">
+            <h3 class="mb-0">@((Model.Stocks?.Sum(s => s.CurrentValue) ?? 0m).ToString("N0"))</h3>
+            <small>القيمة الإجمالية (د.ع)</small>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-white text-center p-3">
+            <h3 class="mb-0">@(Model.Stocks?.Count(s => s.Quantity <= s.Material.MinimumStock) ?? 0)</h3>
+            <small>مخزون منخفض</small>
+        </div>
+    </div>
+</div>
+
+<!-- Stock List -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="fas fa-boxes me-2"></i>المخزون في هذا الموقع</span>
+        <div>
+            <a asp-controller="Stock" asp-action="Create" asp-route-locationId="@Model.Id" class="btn btn-success btn-sm">
+                <i class="fas fa-plus me-1"></i>إضافة مخزون
+            </a>
+            <a asp-controller="Stock" asp-action="ByLocation" asp-route-id="@Model.Id" class="btn btn-primary btn-sm">
+                <i class="fas fa-list me-1"></i>تقرير المخزون
+            </a>
+        </div>
+    </div>
+    <div class="card-body p-0">
+        @if (Model.Stocks?.Any() == true)
+        {
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>#</th>
+                            <th>الرمز</th>
+                            <th>اسم المادة</th>
+                            <th>الفئة</th>
+                            <th class="text-center">الكمية</th>
+                            <th class="text-center">الحد الأدنى</th>
+                            <th class="text-center">القيمة</th>
+                            <th class="text-center">الحالة</th>
+                            <th class="text-center">الإجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @{
+                            int index = 1;
+                        }
+                        @foreach (var stock in Model.Stocks.OrderBy(s => s.Material.Name))
+                        {
+                            var isLowStock = stock.Quantity <= stock.Material.MinimumStock;
+                            <tr class="@(isLowStock ? "table-warning" : "")">
+                                <td>@(index++)</td>
+                                <td><code>@stock.Material.Code</code></td>
+                                <td>
+                                    <a asp-controller="Materials" asp-action="Details" asp-route-id="@stock.MaterialId">
+                                        @stock.Material.Name
+                                    </a>
+                                </td>
+                                <td>@stock.Material.Category?.Name</td>
+                                <td class="text-center">
+                                    <span class="@(isLowStock ? "text-danger fw-bold" : "")">
+                                        @stock.Quantity
+                                    </span>
+                                    @stock.Material.Unit
+                                </td>
+                                <td class="text-center">@stock.Material.MinimumStock</td>
+                                <td class="text-end">@stock.CurrentValue.ToString("N0")</td>
+                                <td class="text-center">
+                                    @if (stock.Quantity == 0)
+                                    {
+                                        <span class="badge bg-danger">نفذ</span>
+                                    }
+                                    else if (isLowStock)
+                                    {
+                                        <span class="badge bg-warning">منخفض</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-success">متوفر</span>
+                                    }
+                                </td>
+                                <td class="text-center">
+                                    <div class="btn-group btn-group-sm">
+                                        <a asp-controller="Stock" asp-action="Details" asp-route-id="@stock.Id" 
+                                           class="btn btn-outline-primary" title="التفاصيل">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a asp-controller="Stock" asp-action="Adjust" asp-route-id="@stock.Id" 
+                                           class="btn btn-outline-warning" title="تعديل الكمية">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                    <tfoot class="table-secondary">
+                        <tr>
+                            <td colspan="4" class="fw-bold">المجموع</td>
+                            <td class="text-center fw-bold">@Model.Stocks.Sum(s => s.Quantity)</td>
+                            <td></td>
+                            <td class="text-end fw-bold">@Model.Stocks.Sum(s => s.CurrentValue).ToString("N0")</td>
+                            <td colspan="2"></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="text-center py-5">
+                <i class="fas fa-inbox fa-4x text-muted mb-3"></i>
+                <h5>لا يوجد مخزون في هذا الموقع</h5>
+                <p class="text-muted">قم بإضافة مواد للمخزون</p>
+                <a asp-controller="Stock" asp-action="Create" asp-route-locationId="@Model.Id" class="btn btn-primary">
+                    <i class="fas fa-plus me-1"></i>إضافة مخزون
+                </a>
+            </div>
+        }
+    </div>
+</div>
+
+@section Styles {
+    <style>
+        @@media print {
+            .btn, .btn-group { display: none !important; }
+        }
+    </style>
+}

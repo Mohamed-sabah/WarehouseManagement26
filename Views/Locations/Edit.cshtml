@@ -1,0 +1,145 @@
+@model Location
+@{
+    ViewData["Title"] = "تعديل الموقع";
+    ViewData["Subtitle"] = Model.Name;
+}
+
+<div class="page-header d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1><i class="fas fa-edit me-2"></i>تعديل الموقع</h1>
+        <small class="text-muted">@Model.Name</small>
+    </div>
+    <a asp-action="Index" class="btn btn-secondary">
+        <i class="fas fa-arrow-right me-1"></i>العودة للمواقع
+    </a>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-warehouse me-2"></i>بيانات الموقع
+            </div>
+            <div class="card-body">
+                <form asp-action="Edit" method="post">
+                    <input type="hidden" asp-for="Id" />
+                    <input type="hidden" asp-for="CreatedAt" />
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label asp-for="Name" class="form-label">اسم الموقع <span class="text-danger">*</span></label>
+                            <input asp-for="Name" class="form-control" placeholder="مثال: المخزن الرئيسي" />
+                            <span asp-validation-for="Name" class="text-danger"></span>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label asp-for="Code" class="form-label">رمز الموقع <span class="text-danger">*</span></label>
+                            <input asp-for="Code" class="form-control" placeholder="مثال: WH01" dir="ltr" />
+                            <span asp-validation-for="Code" class="text-danger"></span>
+                        </div>
+
+                        <div class="col-12">
+                            <label asp-for="Description" class="form-label">الوصف</label>
+                            <textarea asp-for="Description" class="form-control" rows="2" 
+                                      placeholder="وصف مختصر للموقع (اختياري)"></textarea>
+                            <span asp-validation-for="Description" class="text-danger"></span>
+                        </div>
+
+                        <div class="col-12">
+                            <label asp-for="Address" class="form-label">العنوان</label>
+                            <input asp-for="Address" class="form-control" placeholder="العنوان الكامل للموقع" />
+                            <span asp-validation-for="Address" class="text-danger"></span>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label asp-for="ManagerName" class="form-label">اسم المسؤول</label>
+                            <input asp-for="ManagerName" class="form-control" placeholder="اسم مسؤول المخزن" />
+                            <span asp-validation-for="ManagerName" class="text-danger"></span>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label asp-for="Phone" class="form-label">رقم الهاتف</label>
+                            <input asp-for="Phone" class="form-control" placeholder="07XX XXX XXXX" dir="ltr" />
+                            <span asp-validation-for="Phone" class="text-danger"></span>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">الحالة</label>
+                            <div class="form-check form-switch mt-2">
+                                <input asp-for="IsActive" class="form-check-input" type="checkbox" role="switch" />
+                                <label asp-for="IsActive" class="form-check-label">موقع نشط</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr class="my-4" />
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-1"></i>حفظ التعديلات
+                        </button>
+                        <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-outline-secondary">
+                            <i class="fas fa-eye me-1"></i>عرض التفاصيل
+                        </a>
+                        <a asp-action="Index" class="btn btn-secondary">
+                            <i class="fas fa-times me-1"></i>إلغاء
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <!-- Location Info -->
+        <div class="card mb-3">
+            <div class="card-header">
+                <i class="fas fa-info-circle me-2"></i>معلومات
+            </div>
+            <div class="card-body">
+                <p class="mb-2"><strong>تاريخ الإنشاء:</strong> @Model.CreatedAt.ToString("yyyy/MM/dd")</p>
+                <p class="mb-2"><strong>آخر تعديل:</strong> @(Model.UpdatedAt?.ToString("yyyy/MM/dd") ?? "-")</p>
+                <p class="mb-0"><strong>عدد المواد:</strong> @(Model.Stocks?.Select(s => s.MaterialId).Distinct().Count() ?? 0)</p>
+            </div>
+        </div>
+
+        <!-- Warning Card -->
+        @if (Model.Stocks?.Any() == true)
+        {
+            <div class="alert alert-warning">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                <strong>تنبيه:</strong> هذا الموقع يحتوي على @Model.Stocks.Count سجل مخزون. 
+                تغيير حالة الموقع قد يؤثر على عمليات المخزون.
+            </div>
+        }
+
+        <!-- Quick Actions -->
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-bolt me-2"></i>إجراءات سريعة
+            </div>
+            <div class="list-group list-group-flush">
+                <a asp-action="Details" asp-route-id="@Model.Id" class="list-group-item list-group-item-action">
+                    <i class="fas fa-eye me-2"></i>عرض التفاصيل
+                </a>
+                <a asp-controller="Stock" asp-action="ByLocation" asp-route-id="@Model.Id" 
+                   class="list-group-item list-group-item-action">
+                    <i class="fas fa-boxes me-2"></i>تقرير المخزون
+                </a>
+                <a asp-controller="Stock" asp-action="Create" asp-route-locationId="@Model.Id" 
+                   class="list-group-item list-group-item-action">
+                    <i class="fas fa-plus me-2"></i>إضافة مخزون
+                </a>
+                <a asp-action="Delete" asp-route-id="@Model.Id" 
+                   class="list-group-item list-group-item-action text-danger">
+                    <i class="fas fa-trash me-2"></i>حذف الموقع
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

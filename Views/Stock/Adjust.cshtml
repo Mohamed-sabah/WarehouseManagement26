@@ -1,0 +1,202 @@
+@model StockAdjustmentViewModel
+@{
+    ViewData["Title"] = "تعديل المخزون";
+    ViewData["Subtitle"] = $"{Model.MaterialName} - {Model.LocationName}";
+}
+
+<div class="page-header d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1><i class="fas fa-sliders-h me-2"></i>تعديل المخزون</h1>
+        <small class="text-muted">@Model.MaterialName في @Model.LocationName</small>
+    </div>
+    <a asp-action="Index" class="btn btn-secondary">
+        <i class="fas fa-arrow-right me-1"></i>العودة
+    </a>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-edit me-2"></i>بيانات التعديل
+            </div>
+            <div class="card-body">
+                <form asp-action="Adjust" method="post">
+                    <input type="hidden" asp-for="StockId" />
+                    <input type="hidden" asp-for="MaterialName" />
+                    <input type="hidden" asp-for="LocationName" />
+                    <input type="hidden" asp-for="CurrentQuantity" />
+                    
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+                    <div class="alert alert-info mb-4">
+                        <div class="row text-center">
+                            <div class="col-md-4">
+                                <h6 class="mb-1">المادة</h6>
+                                <strong>@Model.MaterialName</strong>
+                            </div>
+                            <div class="col-md-4">
+                                <h6 class="mb-1">الموقع</h6>
+                                <strong>@Model.LocationName</strong>
+                            </div>
+                            <div class="col-md-4">
+                                <h6 class="mb-1">الكمية الحالية</h6>
+                                <strong class="fs-4 text-primary">@Model.CurrentQuantity</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label asp-for="AdjustmentType" class="form-label">نوع التعديل <span class="text-danger">*</span></label>
+                            <select asp-for="AdjustmentType" class="form-select" id="adjustmentType" onchange="updatePreview()">
+                                <option value="1">إضافة للمخزون</option>
+                                <option value="2">خصم من المخزون</option>
+                                <option value="3">تصحيح (تحديد الكمية)</option>
+                            </select>
+                            <span asp-validation-for="AdjustmentType" class="text-danger"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="Quantity" class="form-label">الكمية <span class="text-danger">*</span></label>
+                            <input asp-for="Quantity" class="form-control" type="number" min="1" id="quantityInput" oninput="updatePreview()" required />
+                            <span asp-validation-for="Quantity" class="text-danger"></span>
+                        </div>
+                    </div>
+
+                    <!-- Preview -->
+                    <div class="card bg-light mb-3">
+                        <div class="card-body text-center">
+                            <h6>معاينة النتيجة</h6>
+                            <div class="row">
+                                <div class="col-4">
+                                    <small class="text-muted">الكمية الحالية</small>
+                                    <h4 id="currentQty">@Model.CurrentQuantity</h4>
+                                </div>
+                                <div class="col-4">
+                                    <small class="text-muted">التعديل</small>
+                                    <h4 id="adjustmentPreview" class="text-primary">+0</h4>
+                                </div>
+                                <div class="col-4">
+                                    <small class="text-muted">الكمية الجديدة</small>
+                                    <h4 id="newQty" class="text-success">@Model.CurrentQuantity</h4>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Reason" class="form-label">سبب التعديل <span class="text-danger">*</span></label>
+                        <select class="form-select mb-2" id="reasonSelect" onchange="updateReason()">
+                            <option value="">-- اختر سبب أو اكتب سبب مخصص --</option>
+                            <option value="تصحيح بعد الجرد">تصحيح بعد الجرد</option>
+                            <option value="استلام من مورد">استلام من مورد</option>
+                            <option value="صرف للاستخدام">صرف للاستخدام</option>
+                            <option value="تلف أو إتلاف">تلف أو إتلاف</option>
+                            <option value="إرجاع من قسم">إرجاع من قسم</option>
+                            <option value="تعديل إداري">تعديل إداري</option>
+                            <option value="custom">سبب مخصص...</option>
+                        </select>
+                        <input asp-for="Reason" class="form-control" id="reasonInput" placeholder="اكتب سبب التعديل..." required />
+                        <span asp-validation-for="Reason" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Notes" class="form-label">ملاحظات إضافية</label>
+                        <textarea asp-for="Notes" class="form-control" rows="2" placeholder="أي تفاصيل إضافية..."></textarea>
+                    </div>
+
+                    <hr />
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-check me-1"></i>تنفيذ التعديل
+                        </button>
+                        <a asp-action="Details" asp-route-id="@Model.StockId" class="btn btn-secondary">
+                            <i class="fas fa-times me-1"></i>إلغاء
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <i class="fas fa-info-circle me-2"></i>إرشادات
+            </div>
+            <div class="card-body">
+                <h6><i class="fas fa-plus-circle text-success me-2"></i>إضافة</h6>
+                <p class="small text-muted">تضيف الكمية المدخلة إلى المخزون الحالي</p>
+                
+                <h6><i class="fas fa-minus-circle text-danger me-2"></i>خصم</h6>
+                <p class="small text-muted">تخصم الكمية المدخلة من المخزون الحالي</p>
+                
+                <h6><i class="fas fa-sync text-primary me-2"></i>تصحيح</h6>
+                <p class="small text-muted">تحدد الكمية الجديدة مباشرة (تستبدل الكمية الحالية)</p>
+
+                <hr />
+                <div class="alert alert-warning small mb-0">
+                    <i class="fas fa-exclamation-triangle me-1"></i>
+                    <strong>تنبيه:</strong> سيتم تسجيل هذا التعديل في سجل المخزون مع التاريخ والسبب.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        const currentQty = @Model.CurrentQuantity;
+        
+        function updatePreview() {
+            const type = parseInt(document.getElementById('adjustmentType').value);
+            const qty = parseInt(document.getElementById('quantityInput').value) || 0;
+            
+            let adjustment = '';
+            let newQty = currentQty;
+            
+            switch(type) {
+                case 1: // Add
+                    adjustment = '+' + qty;
+                    newQty = currentQty + qty;
+                    document.getElementById('adjustmentPreview').className = 'text-success';
+                    break;
+                case 2: // Deduct
+                    adjustment = '-' + qty;
+                    newQty = currentQty - qty;
+                    document.getElementById('adjustmentPreview').className = 'text-danger';
+                    break;
+                case 3: // Set
+                    adjustment = '=' + qty;
+                    newQty = qty;
+                    document.getElementById('adjustmentPreview').className = 'text-primary';
+                    break;
+            }
+            
+            document.getElementById('adjustmentPreview').textContent = adjustment;
+            document.getElementById('newQty').textContent = newQty;
+            
+            if (newQty < 0) {
+                document.getElementById('newQty').className = 'text-danger';
+            } else {
+                document.getElementById('newQty').className = 'text-success';
+            }
+        }
+        
+        function updateReason() {
+            const select = document.getElementById('reasonSelect');
+            const input = document.getElementById('reasonInput');
+            
+            if (select.value && select.value !== 'custom') {
+                input.value = select.value;
+            } else if (select.value === 'custom') {
+                input.value = '';
+                input.focus();
+            }
+        }
+        
+        // Initialize
+        updatePreview();
+    </script>
+}

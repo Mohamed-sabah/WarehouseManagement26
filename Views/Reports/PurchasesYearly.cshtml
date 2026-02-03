@@ -1,0 +1,249 @@
+@model PurchasesYearlyReportViewModel
+@{
+    ViewData["Title"] = "التقرير السنوي للمشتريات";
+    ViewData["Subtitle"] = $"سنة {Model.Year}";
+}
+
+<div class="page-header d-flex justify-content-between align-items-center mb-4 no-print">
+    <div>
+        <h1><i class="fas fa-chart-line me-2"></i>التقرير السنوي للمشتريات</h1>
+        <small class="text-muted">تحليل المشتريات لسنة @Model.Year</small>
+    </div>
+    <div>
+        <a asp-action="Index" class="btn btn-secondary">
+            <i class="fas fa-arrow-right me-1"></i>العودة
+        </a>
+        <button onclick="window.print()" class="btn btn-info">
+            <i class="fas fa-print me-1"></i>طباعة
+        </button>
+        <a asp-action="ExportPurchasesYearly" asp-route-year="@Model.Year" class="btn btn-success">
+            <i class="fas fa-file-excel me-1"></i>تصدير Excel
+        </a>
+    </div>
+</div>
+
+<!-- Print Header -->
+<div class="print-header text-center mb-4" style="display: none;">
+    <h4>@Model.InstitutionName</h4>
+    <h3>التقرير السنوي للمشتريات</h3>
+    <h4>سنة @Model.Year</h4>
+</div>
+
+<!-- Year Selector -->
+<div class="card mb-4 no-print">
+    <div class="card-body">
+        <form asp-action="PurchasesYearly" method="get" class="row g-3 align-items-center">
+            <div class="col-auto">
+                <label class="form-label mb-0">اختر السنة:</label>
+            </div>
+            <div class="col-md-2">
+                <select name="year" class="form-select" onchange="this.form.submit()">
+                    @for (int y = DateTime.Now.Year; y >= DateTime.Now.Year - 5; y--)
+                    {
+                        <option value="@y" selected="@(y == Model.Year)">@y</option>
+                    }
+                </select>
+            </div>
+            <div class="col-auto">
+                <a asp-action="PurchasesYearly" asp-route-year="@(Model.Year - 1)" class="btn btn-outline-secondary">
+                    <i class="fas fa-chevron-right"></i> السنة السابقة
+                </a>
+                @if (Model.Year < DateTime.Now.Year)
+                {
+                    <a asp-action="PurchasesYearly" asp-route-year="@(Model.Year + 1)" class="btn btn-outline-secondary">
+                        السنة التالية <i class="fas fa-chevron-left"></i>
+                    </a>
+                }
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white text-center p-3">
+            <h3 class="mb-0">@Model.TotalPurchases</h3>
+            <small>إجمالي عمليات الشراء</small>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white text-center p-3">
+            <h3 class="mb-0">@Model.TotalQuantity.ToString("N0")</h3>
+            <small>إجمالي الكميات</small>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white text-center p-3">
+            <h3 class="mb-0">@Model.TotalValue.ToString("N0")</h3>
+            <small>إجمالي القيمة (د.ع)</small>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-white text-center p-3">
+            <h3 class="mb-0">@(Model.TotalPurchases > 0 ? (Model.TotalValue / Model.TotalPurchases).ToString("N0") : "0")</h3>
+            <small>متوسط قيمة الشراء</small>
+        </div>
+    </div>
+</div>
+
+<!-- Monthly Summary Table -->
+<div class="card mb-4">
+    <div class="card-header bg-dark text-white">
+        <i class="fas fa-calendar-alt me-2"></i>ملخص المشتريات الشهري
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover mb-0">
+                <thead class="table-dark">
+                    <tr>
+                        <th class="text-center">الشهر</th>
+                        <th class="text-center">عدد العمليات</th>
+                        <th class="text-center">الكمية</th>
+                        <th class="text-center">القيمة</th>
+                        <th class="text-center">النسبة</th>
+                        <th class="text-center">التغير عن الشهر السابق</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @{
+                        string[] arabicMonths = { "يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", 
+                                                  "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر" };
+                        decimal previousValue = 0;
+                    }
+                    @foreach (var month in Model.MonthlyData)
+                    {
+                        var percentage = Model.TotalValue > 0 ? (month.Value / Model.TotalValue * 100) : 0;
+                        var change = previousValue > 0 ? ((month.Value - previousValue) / previousValue * 100) : 0;
+                        <tr>
+                            <td class="text-center fw-bold">@arabicMonths[month.Month - 1]</td>
+                            <td class="text-center">@month.PurchasesCount</td>
+                            <td class="text-center">@month.Quantity.ToString("N0")</td>
+                            <td class="text-end">@month.Value.ToString("N0")</td>
+                            <td>
+                                <div class="progress" style="height: 20px;">
+                                    <div class="progress-bar bg-info" style="width: @percentage%">
+                                        @percentage.ToString("F1")%
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="text-center">
+                                @if (previousValue > 0)
+                                {
+                                    <span class="badge @(change > 0 ? "bg-success" : change < 0 ? "bg-danger" : "bg-secondary")">
+                                        @(change > 0 ? "↑" : change < 0 ? "↓" : "=") @Math.Abs(change).ToString("F1")%
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">-</span>
+                                }
+                            </td>
+                        </tr>
+                        previousValue = month.Value;
+                    }
+                </tbody>
+                <tfoot class="table-secondary fw-bold">
+                    <tr>
+                        <td class="text-center">المجموع</td>
+                        <td class="text-center">@Model.TotalPurchases</td>
+                        <td class="text-center">@Model.TotalQuantity.ToString("N0")</td>
+                        <td class="text-end">@Model.TotalValue.ToString("N0")</td>
+                        <td class="text-center">100%</td>
+                        <td></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Summary by Category -->
+<div class="card mb-4">
+    <div class="card-header">
+        <i class="fas fa-layer-group me-2"></i>المشتريات حسب الفئة
+    </div>
+    <div class="card-body p-0">
+        <table class="table table-bordered mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>الفئة</th>
+                    <th class="text-center">عدد العمليات</th>
+                    <th class="text-center">الكمية</th>
+                    <th class="text-center">القيمة</th>
+                    <th class="text-center">النسبة</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var cat in Model.CategoryData.OrderByDescending(c => c.Value))
+                {
+                    var percentage = Model.TotalValue > 0 ? (cat.Value / Model.TotalValue * 100) : 0;
+                    <tr>
+                        <td>@cat.CategoryName</td>
+                        <td class="text-center">@cat.PurchasesCount</td>
+                        <td class="text-center">@cat.Quantity.ToString("N0")</td>
+                        <td class="text-end">@cat.Value.ToString("N0")</td>
+                        <td>
+                            <div class="progress" style="height: 20px;">
+                                <div class="progress-bar bg-success" style="width: @percentage%">
+                                    @percentage.ToString("F1")%
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Top Suppliers -->
+@if (Model.TopSuppliers?.Any() == true)
+{
+    <div class="card mb-4">
+        <div class="card-header">
+            <i class="fas fa-truck me-2"></i>أكبر الموردين
+        </div>
+        <div class="card-body p-0">
+            <table class="table table-bordered mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>المورد</th>
+                        <th class="text-center">عدد العمليات</th>
+                        <th class="text-center">القيمة الإجمالية</th>
+                        <th class="text-center">النسبة</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var supplier in Model.TopSuppliers.Take(10))
+                    {
+                        var percentage = Model.TotalValue > 0 ? (supplier.Value / Model.TotalValue * 100) : 0;
+                        <tr>
+                            <td>@supplier.SupplierName</td>
+                            <td class="text-center">@supplier.PurchasesCount</td>
+                            <td class="text-end">@supplier.Value.ToString("N0")</td>
+                            <td>
+                                <div class="progress" style="height: 20px;">
+                                    <div class="progress-bar bg-warning" style="width: @percentage%">
+                                        @percentage.ToString("F1")%
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+
+@section Styles {
+    <style>
+        @@media print {
+            .no-print { display: none !important; }
+            .print-header { display: block !important; }
+            .card { border: 1px solid #000 !important; page-break-inside: avoid; }
+            body { font-size: 11px; }
+        }
+    </style>
+}

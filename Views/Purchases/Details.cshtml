@@ -1,0 +1,277 @@
+@model Purchase
+@{
+    ViewData["Title"] = $"تفاصيل الشراء - {Model.Material.Name}";
+    ViewData["Subtitle"] = $"فاتورة رقم {Model.InvoiceNumber ?? Model.Id.ToString()}";
+}
+
+<div class="page-header d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1><i class="fas fa-shopping-cart me-2"></i>تفاصيل عملية الشراء</h1>
+        <small class="text-muted">
+            @Model.PurchaseDate.ToString("yyyy/MM/dd") - 
+            @Model.Material.Name
+        </small>
+    </div>
+    <div class="btn-group">
+        @if (!Model.IsAddedToStock)
+        {
+            <form asp-action="AddToStock" asp-route-id="@Model.Id" method="post" style="display:inline;">
+                <button type="submit" class="btn btn-success">
+                    <i class="fas fa-plus-circle me-1"></i>إضافة للمخزون
+                </button>
+            </form>
+        }
+        <a asp-action="Index" class="btn btn-secondary">
+            <i class="fas fa-arrow-right me-1"></i>العودة
+        </a>
+        <button onclick="window.print()" class="btn btn-info">
+            <i class="fas fa-print me-1"></i>طباعة
+        </button>
+    </div>
+</div>
+
+<!-- Status -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card stat-card primary">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h3 class="mb-0">@Model.Quantity</h3>
+                    <small>@Model.Material.Unit</small>
+                </div>
+                <i class="fas fa-cubes fa-2x opacity-50"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card success">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h3 class="mb-0">@Model.UnitPrice.ToString("N0")</h3>
+                    <small>سعر الوحدة (د.ع)</small>
+                </div>
+                <i class="fas fa-tag fa-2x opacity-50"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card info">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h3 class="mb-0">@Model.TotalPrice.ToString("N0")</h3>
+                    <small>الإجمالي (د.ع)</small>
+                </div>
+                <i class="fas fa-coins fa-2x opacity-50"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card @(Model.IsAddedToStock ? "success" : "warning")">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h5 class="mb-0">@(Model.IsAddedToStock ? "تم الإضافة" : "معلق")</h5>
+                    <small>حالة المخزون</small>
+                </div>
+                <i class="fas @(Model.IsAddedToStock ? "fa-check-circle" : "fa-clock") fa-2x opacity-50"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Purchase Details -->
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <i class="fas fa-file-invoice me-2"></i>بيانات الشراء
+            </div>
+            <div class="card-body">
+                <table class="table table-borderless">
+                    <tr>
+                        <th style="width: 40%;">رقم العملية:</th>
+                        <td><code>#@Model.Id</code></td>
+                    </tr>
+                    <tr>
+                        <th>تاريخ الشراء:</th>
+                        <td><strong>@Model.PurchaseDate.ToString("yyyy/MM/dd")</strong></td>
+                    </tr>
+                    <tr>
+                        <th>طريقة الحصول:</th>
+                        <td>
+                            @switch (Model.Method)
+                            {
+                                case AcquisitionMethod.Purchase:
+                                    <span class="badge bg-primary">شراء</span>
+                                    break;
+                                case AcquisitionMethod.Transfer:
+                                    <span class="badge bg-info">مناقلة</span>
+                                    break;
+                                case AcquisitionMethod.Gift:
+                                    <span class="badge bg-success">هدية</span>
+                                    break;
+                                case AcquisitionMethod.OpeningBalance:
+                                    <span class="badge bg-secondary">رصيد افتتاحي</span>
+                                    break;
+                                default:
+                                    <span class="badge bg-dark">@Model.Method</span>
+                                    break;
+                            }
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>رقم الفاتورة:</th>
+                        <td>@(Model.InvoiceNumber ?? "-")</td>
+                    </tr>
+                    <tr>
+                        <th>المورد:</th>
+                        <td>@(Model.Supplier ?? "-")</td>
+                    </tr>
+                    <tr>
+                        <th>رقم الدفعة:</th>
+                        <td>@(Model.BatchNumber ?? "-")</td>
+                    </tr>
+                    <tr>
+                        <th>تاريخ انتهاء الصلاحية:</th>
+                        <td>@(Model.ExpiryDate?.ToString("yyyy/MM/dd") ?? "-")</td>
+                    </tr>
+                    <tr>
+                        <th>العملة:</th>
+                        <td>@Model.Currency</td>
+                    </tr>
+                    @if (Model.ExchangeRate != 1)
+                    {
+                        <tr>
+                            <th>سعر الصرف:</th>
+                            <td>@Model.ExchangeRate</td>
+                        </tr>
+                        <tr>
+                            <th>السعر بالدينار:</th>
+                            <td><strong>@Model.PriceInIQD.ToString("N0")</strong></td>
+                        </tr>
+                    }
+                    <tr>
+                        <th>تاريخ التسجيل:</th>
+                        <td>@Model.CreatedDate.ToString("yyyy/MM/dd HH:mm")</td>
+                    </tr>
+                </table>
+
+                @if (!string.IsNullOrEmpty(Model.Notes))
+                {
+                    <hr />
+                    <h6>ملاحظات:</h6>
+                    <p class="text-muted mb-0">@Model.Notes</p>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Material & Location Info -->
+    <div class="col-md-6 mb-4">
+        <div class="card mb-3">
+            <div class="card-header">
+                <i class="fas fa-box me-2"></i>معلومات المادة
+            </div>
+            <div class="card-body">
+                <table class="table table-borderless">
+                    <tr>
+                        <th style="width: 40%;">المادة:</th>
+                        <td>
+                            <a asp-controller="Materials" asp-action="Details" asp-route-id="@Model.MaterialId">
+                                @Model.Material.Name
+                            </a>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>رمز المادة:</th>
+                        <td><code>@Model.Material.Code</code></td>
+                    </tr>
+                    <tr>
+                        <th>الفئة:</th>
+                        <td>@(Model.Material.Category?.Name ?? "-")</td>
+                    </tr>
+                    <tr>
+                        <th>الوحدة:</th>
+                        <td>@Model.Material.Unit</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-map-marker-alt me-2"></i>معلومات التخزين
+            </div>
+            <div class="card-body">
+                <table class="table table-borderless">
+                    <tr>
+                        <th style="width: 40%;">موقع التخزين:</th>
+                        <td>
+                            <a asp-controller="Locations" asp-action="Details" asp-route-id="@Model.LocationId">
+                                @Model.Location.Name
+                            </a>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>رمز الموقع:</th>
+                        <td><code>@Model.Location.Code</code></td>
+                    </tr>
+                    <tr>
+                        <th>تمت الإضافة للمخزون:</th>
+                        <td>
+                            @if (Model.IsAddedToStock)
+                            {
+                                <span class="badge bg-success">نعم</span>
+                                <br />
+                                <small class="text-muted">@Model.AddedToStockDate?.ToString("yyyy/MM/dd HH:mm")</small>
+                            }
+                            else
+                            {
+                                <span class="badge bg-warning">لا - في الانتظار</span>
+                            }
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Financial Summary -->
+<div class="card">
+    <div class="card-header bg-success text-white">
+        <i class="fas fa-calculator me-2"></i>الملخص المالي
+    </div>
+    <div class="card-body">
+        <div class="row text-center">
+            <div class="col-md-3">
+                <h6 class="text-muted">الكمية</h6>
+                <h3>@Model.Quantity</h3>
+                <small>@Model.Material.Unit</small>
+            </div>
+            <div class="col-md-3">
+                <h6 class="text-muted">سعر الوحدة</h6>
+                <h3>@Model.UnitPrice.ToString("N0")</h3>
+                <small>@Model.Currency</small>
+            </div>
+            <div class="col-md-3">
+                <h6 class="text-muted">المجموع</h6>
+                <h3 class="text-primary">@Model.TotalPrice.ToString("N0")</h3>
+                <small>@Model.Currency</small>
+            </div>
+            <div class="col-md-3">
+                <h6 class="text-muted">بالدينار العراقي</h6>
+                <h3 class="text-success">@Model.PriceInIQD.ToString("N0")</h3>
+                <small>د.ع</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Styles {
+    <style>
+        @@media print {
+            .btn, .btn-group { display: none !important; }
+            .card { break-inside: avoid; }
+        }
+    </style>
+}

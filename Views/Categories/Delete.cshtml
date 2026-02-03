@@ -1,0 +1,179 @@
+@model Category
+
+@* 
+Pseudocode / Plan (step-by-step):
+1. Problem: The view references `Model.CreatedAt` but `Category` type may not define that property, causing CS1061 at compile time.
+2. Goal: Avoid direct compile-time access to a possibly-missing property while still showing a creation date when available.
+3. Strategy:
+   - Use reflection at runtime to look for common creation timestamp property names on the model:
+     - Try "CreatedAt", then "CreatedOn", "CreatedDate", then "DateCreated".
+   - If a matching property is found:
+     - If its value is a DateTime, format it as "yyyy/MM/dd".
+     - Otherwise, call ToString() on the value.
+   - If no property is found or value is null, show a fallback string "غير محدد".
+4. Implementation steps:
+   - Add a small Razor code block that inspects `Model.GetType().GetProperty(...)`.
+   - Compute `createdDisplay` string based on the result.
+   - Replace direct `@Model.CreatedAt.ToString(...)` with `@createdDisplay`.
+   - Keep the rest of the view unchanged.
+*@
+
+@{
+    ViewData["Title"] = "حذف الفئة";
+    ViewData["Subtitle"] = Model.Name;
+}
+
+<div class="page-header d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1><i class="fas fa-trash-alt text-danger me-2"></i>حذف الفئة</h1>
+        <small class="text-muted">تأكيد الحذف</small>
+    </div>
+    <a asp-action="Index" class="btn btn-secondary">
+        <i class="fas fa-arrow-right me-1"></i>العودة للفئات
+    </a>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card border-danger">
+            <div class="card-header bg-danger text-white">
+                <i class="fas fa-exclamation-triangle me-2"></i>تحذير - عملية حذف
+            </div>
+            <div class="card-body">
+                <div class="text-center mb-4">
+                    <i class="fas fa-folder-minus fa-5x text-danger mb-3"></i>
+                    <h4>هل أنت متأكد من حذف هذه الفئة؟</h4>
+                    <p class="text-muted">هذه العملية لا يمكن التراجع عنها</p>
+                </div>
+
+                <!-- Category Details -->
+                <div class="card bg-light mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title">@Model.Name</h5>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p class="mb-1"><strong>الرمز:</strong> <code>@Model.Code</code></p>
+                                <p class="mb-1"><strong>الوصف:</strong> @(Model.Description ?? "لا يوجد")</p>
+                            </div>
+                            <div class="col-md-6">
+                                @{
+                                    // Runtime-safe retrieval of a creation date property (avoids compile-time CS1061).
+                                    string createdDisplay = "غير محدد";
+                                    var createdPropNames = new[] { "CreatedAt", "CreatedOn", "CreatedDate", "DateCreated" };
+                                    var modelType = Model?.GetType();
+                                    if (modelType != null)
+                                    {
+                                        foreach (var name in createdPropNames)
+                                        {
+                                            var prop = modelType.GetProperty(name);
+                                            if (prop != null)
+                                            {
+                                                var val = prop.GetValue(Model);
+                                                if (val is DateTime dt)
+                                                {
+                                                    createdDisplay = dt.ToString("yyyy/MM/dd");
+                                                }
+                                                else if (val != null)
+                                                {
+                                                    createdDisplay = val.ToString();
+                                                }
+                                                break;
+                                            }
+                                        }
+                                    }
+                                }
+                                <p class="mb-1"><strong>تاريخ الإنشاء:</strong> @createdDisplay</p>
+                                <p class="mb-1">
+                                    <strong>الحالة:</strong>
+                                    @if (Model.IsActive)
+                                    {
+                                        <span class="badge bg-success">نشطة</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary">غير نشطة</span>
+                                    }
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Warning Messages -->
+                @{
+                    var materialsCount = Model.Materials?.Count ?? 0;
+                    var subCategoriesCount = Model.SubCategories?.Count ?? 0;
+                    bool hasRelatedData = materialsCount > 0 || subCategoriesCount > 0;
+                }
+
+                @if (hasRelatedData)
+                {
+                    <div class="alert alert-danger">
+                        <h5><i class="fas fa-ban me-2"></i>لا يمكن حذف هذه الفئة!</h5>
+                        <p class="mb-2">هذه الفئة مرتبطة بالبيانات التالية:</p>
+                        <ul class="mb-0">
+                            @if (materialsCount > 0)
+                            {
+                                <li><strong>@materialsCount</strong> مادة مرتبطة بهذه الفئة</li>
+                            }
+                            @if (subCategoriesCount > 0)
+                            {
+                                <li><strong>@subCategoriesCount</strong> فئة فرعية</li>
+                            }
+                        </ul>
+                        <hr />
+                        <p class="mb-0">
+                            <i class="fas fa-info-circle me-1"></i>
+                            يجب نقل أو حذف جميع المواد والفئات الفرعية قبل حذف هذه الفئة.
+                        </p>
+                    </div>
+
+                    <div class="d-flex gap-2 justify-content-center">
+                        <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-primary">
+                            <i class="fas fa-eye me-1"></i>عرض المواد المرتبطة
+                        </a>
+                        <a asp-action="Index" class="btn btn-secondary">
+                            <i class="fas fa-arrow-right me-1"></i>العودة للفئات
+                        </a>
+                    </div>
+                }
+                else
+                {
+                    <div class="alert alert-warning">
+                        <i class="fas fa-info-circle me-2"></i>
+                        سيتم حذف الفئة "<strong>@Model.Name</strong>" نهائياً من النظام.
+                    </div>
+
+                    <form asp-action="Delete" method="post">
+                        <input type="hidden" asp-for="Id" />
+                        
+                        <div class="mb-4">
+                            <label class="form-label">للتأكيد، اكتب اسم الفئة: <strong>@Model.Name</strong></label>
+                            <input type="text" class="form-control" id="confirmName" 
+                                   placeholder="اكتب اسم الفئة للتأكيد" autocomplete="off" />
+                        </div>
+
+                        <div class="d-flex gap-2 justify-content-center">
+                            <button type="submit" class="btn btn-danger" id="deleteBtn" disabled>
+                                <i class="fas fa-trash me-1"></i>تأكيد الحذف
+                            </button>
+                            <a asp-action="Index" class="btn btn-secondary">
+                                <i class="fas fa-times me-1"></i>إلغاء
+                            </a>
+                        </div>
+                    </form>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.getElementById('confirmName')?.addEventListener('input', function() {
+            const expectedName = '@Model.Name';
+            const deleteBtn = document.getElementById('deleteBtn');
+            deleteBtn.disabled = this.value !== expectedName;
+        });
+    </script>
+}

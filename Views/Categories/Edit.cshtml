@@ -1,0 +1,172 @@
+@model Category
+@{
+    ViewData["Title"] = "تعديل الفئة";
+    ViewData["Subtitle"] = Model.Name;
+}
+
+<div class="page-header d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1><i class="fas fa-edit me-2"></i>تعديل الفئة</h1>
+        <small class="text-muted">@Model.Name</small>
+    </div>
+    <a asp-action="Index" class="btn btn-secondary">
+        <i class="fas fa-arrow-right me-1"></i>العودة للفئات
+    </a>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-folder me-2"></i>بيانات الفئة
+            </div>
+            <div class="card-body">
+                <form asp-action="Edit" method="post">
+                    <input type="hidden" asp-for="Id" />
+                    <input type="hidden" asp-for="CreatedAt" />
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label asp-for="Name" class="form-label">اسم الفئة <span class="text-danger">*</span></label>
+                            <input asp-for="Name" class="form-control" placeholder="مثال: مواد مكتبية" />
+                            <span asp-validation-for="Name" class="text-danger"></span>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label asp-for="Code" class="form-label">رمز الفئة <span class="text-danger">*</span></label>
+                            <input asp-for="Code" class="form-control" placeholder="مثال: OFF" dir="ltr" />
+                            <span asp-validation-for="Code" class="text-danger"></span>
+                        </div>
+
+                        <div class="col-12">
+                            <label asp-for="Description" class="form-label">الوصف</label>
+                            <textarea asp-for="Description" class="form-control" rows="3" 
+                                      placeholder="وصف مختصر للفئة (اختياري)"></textarea>
+                            <span asp-validation-for="Description" class="text-danger"></span>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label asp-for="ParentCategoryId" class="form-label">الفئة الرئيسية</label>
+                            <select asp-for="ParentCategoryId" class="form-select">
+                                <option value="">-- بدون فئة رئيسية --</option>
+                                @foreach (var cat in ViewBag.Categories as IEnumerable<Category>)
+                                {
+                                    if (cat.Id != Model.Id)
+                                    {
+                                        <option value="@cat.Id" selected="@(cat.Id == Model.ParentCategoryId)">@cat.Name</option>
+                                    }
+                                }
+                            </select>
+                            <span asp-validation-for="ParentCategoryId" class="text-danger"></span>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label">الحالة</label>
+                            <div class="form-check form-switch mt-2">
+                                <input asp-for="IsActive" class="form-check-input" type="checkbox" role="switch" />
+                                <label asp-for="IsActive" class="form-check-label">فئة نشطة</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr class="my-4" />
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-1"></i>حفظ التعديلات
+                        </button>
+                        <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-outline-secondary">
+                            <i class="fas fa-eye me-1"></i>عرض التفاصيل
+                        </a>
+                        <a asp-action="Index" class="btn btn-secondary">
+                            <i class="fas fa-times me-1"></i>إلغاء
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <!-- Category Info -->
+        <div class="card mb-3">
+            <div class="card-header">
+                <i class="fas fa-info-circle me-2"></i>معلومات
+            </div>
+                <div class="card-body">
+                    @{ 
+                        // Runtime-safe retrieval of created/updated date properties to avoid CS1061
+                        string createdDisplay = "-";
+                        string updatedDisplay = "-";
+                        var createdPropNames = new[] { "CreatedAt", "CreatedOn", "CreatedDate", "DateCreated" };
+                        var updatedPropNames = new[] { "UpdatedAt", "UpdatedOn", "UpdatedDate", "DateUpdated" };
+                        var modelType = Model?.GetType();
+                        if (modelType != null)
+                        {
+                            foreach (var name in createdPropNames)
+                            {
+                                var prop = modelType.GetProperty(name);
+                                if (prop != null)
+                                {
+                                    var val = prop.GetValue(Model);
+                                    if (val is DateTime dt) createdDisplay = dt.ToString("yyyy/MM/dd");
+                                    else if (val != null) createdDisplay = val.ToString();
+                                    break;
+                                }
+                            }
+
+                            foreach (var name in updatedPropNames)
+                            {
+                                var prop = modelType.GetProperty(name);
+                                if (prop != null)
+                                {
+                                    var val = prop.GetValue(Model);
+                                    if (val is DateTime dt) updatedDisplay = dt.ToString("yyyy/MM/dd");
+                                    else if (val != null) updatedDisplay = val.ToString();
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    <p class="mb-2"><strong>تاريخ الإنشاء:</strong> @createdDisplay</p>
+                    <p class="mb-2"><strong>آخر تعديل:</strong> @updatedDisplay</p>
+                    <p class="mb-0"><strong>عدد المواد:</strong> @(Model.Materials?.Count ?? 0)</p>
+                </div>
+        </div>
+
+        <!-- Warning Card -->
+        @if (Model.Materials?.Any() == true)
+        {
+            <div class="alert alert-warning">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                <strong>تنبيه:</strong> هذه الفئة تحتوي على @Model.Materials.Count مادة. 
+                أي تغييرات على الفئة ستؤثر على جميع المواد المرتبطة بها.
+            </div>
+        }
+
+        <!-- Quick Actions -->
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-bolt me-2"></i>إجراءات سريعة
+            </div>
+            <div class="list-group list-group-flush">
+                <a asp-action="Details" asp-route-id="@Model.Id" class="list-group-item list-group-item-action">
+                    <i class="fas fa-eye me-2"></i>عرض التفاصيل
+                </a>
+                <a asp-controller="Materials" asp-action="Create" asp-route-categoryId="@Model.Id" 
+                   class="list-group-item list-group-item-action">
+                    <i class="fas fa-plus me-2"></i>إضافة مادة جديدة
+                </a>
+                <a asp-action="Delete" asp-route-id="@Model.Id" 
+                   class="list-group-item list-group-item-action text-danger">
+                    <i class="fas fa-trash me-2"></i>حذف الفئة
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
