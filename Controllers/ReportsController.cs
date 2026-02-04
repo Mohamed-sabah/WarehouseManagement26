@@ -499,17 +499,18 @@ namespace WarehouseManagement.Controllers
                 CommitteeHead = "رئيس لجنة الجرد",
                 CategoryId = categoryId,
                 LocationId = locationId,
-                //Items = stocks.Select(s => new InventoryForm2ItemViewModel
-                //{
-                //    MaterialCode = s.Material.Code,
-                //    MaterialName = s.Material.Name,
-                //    Unit = s.Material.Unit,
-                //    BookQuantity = s.Quantity,
-                //    BookValue = s.CurrentValue,
-                //    ActualQuantity = s.Quantity, // الافتراضي: الفعلي = الدفتري
-                //    ActualValue = s.CurrentValue,
-                //    Notes = ""
-                //}).ToList()
+
+                Items = stocks.Select(s => new InventoryForm2ItemViewModel
+                {
+                    MaterialCode = s.Material.Code,
+                    MaterialName = s.Material.Name,
+                    Unit = s.Material.Unit,
+                    BookQuantity = s.Quantity,
+                    BookValue = s.CurrentValue,
+                    ActualQuantity = s.Quantity, // الافتراضي: الفعلي = الدفتري
+                    ActualValue = s.CurrentValue,
+                    Notes = ""
+                }).ToList()
             };
 
             ViewBag.Categories = await _context.Categories.Where(c => c.IsActive).OrderBy(c => c.Name).ToListAsync();

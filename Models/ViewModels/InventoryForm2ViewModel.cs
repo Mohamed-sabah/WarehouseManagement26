@@ -1,13 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using WarehouseManagement.Models.ViewModels;
 
-/// <summary>
-/// ViewModel for Inventory Form 2 Razor view.
-/// Placed in global namespace so the Razor file's `@model InventoryForm2ViewModel` resolves
-/// without requiring additional using directives. Move into a namespace if your project uses one
-/// and update the Razor `@model` accordingly (e.g. `@model YourApp.ViewModels.InventoryForm2ViewModel`).
-/// </summary>
 public class InventoryForm2ViewModel
 {
     public int Year { get; set; }
@@ -20,38 +15,24 @@ public class InventoryForm2ViewModel
     public string WarehouseManager { get; set; } = string.Empty;
     public string? CommitteeNotes { get; set; }
 
-    public List<ItemViewModel> Items { get; set; }
+    // ✅ تغيير النوع هنا
+    public List<InventoryForm2ItemViewModel> Items { get; set; }
 
     public InventoryForm2ViewModel()
     {
-        Items = new List<ItemViewModel>();
+        Items = new List<InventoryForm2ItemViewModel>();
         ReportDate = DateTime.Today;
         InventoryDate = DateTime.Today;
     }
 
-    // convenience helpers used by the Razor view (optional but useful)
     public int TotalItems => Items?.Count ?? 0;
-    public int MatchingCount => Items?.Count(i => i.ActualQuantity == i.RecordedQuantity) ?? 0;
-    public int ShortageCount => Items?.Count(i => i.ActualQuantity < i.RecordedQuantity) ?? 0;
-    public int SurplusCount => Items?.Count(i => i.ActualQuantity > i.RecordedQuantity) ?? 0;
+    public int MatchingCount => Items?.Count(i => i.ActualQuantity == i.BookQuantity) ?? 0;
+    public int ShortageCount => Items?.Count(i => i.ActualQuantity < i.BookQuantity) ?? 0;
+    public int SurplusCount => Items?.Count(i => i.ActualQuantity > i.BookQuantity) ?? 0;
 
-    public string FormNumber { get; internal set; }
-    public string WarehouseKeeper { get; internal set; }
-    public string CommitteeHead { get; internal set; }
-    public int? CategoryId { get; internal set; }
-    public int? LocationId { get; internal set; }
-
- 
-}
-
-public class ItemViewModel
-{
-    public string CategoryName { get; set; } = string.Empty;
-    public string MaterialCode { get; set; } = string.Empty;
-    public string MaterialName { get; set; } = string.Empty;
-    public string Unit { get; set; } = string.Empty;
-    public decimal RecordedQuantity { get; set; }
-    public decimal UnitPrice { get; set; }
-    public decimal ActualQuantity { get; set; }
-    public string? Notes { get; set; }
+    public string FormNumber { get; set; } = string.Empty;
+    public string WarehouseKeeper { get; set; } = string.Empty;
+    public string CommitteeHead { get; set; } = string.Empty;
+    public int? CategoryId { get; set; }
+    public int? LocationId { get; set; }
 }
