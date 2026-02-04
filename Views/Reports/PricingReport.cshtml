@@ -1,13 +1,13 @@
-@model PricingReportViewModel
+@model WarehouseManagement.Models.ViewModels.PricingReportViewModel
 @{
-    ViewData["Title"] = "تقرير التسعير";
-    ViewData["Subtitle"] = "أسعار المواد وتغيراتها";
+    ViewData["Title"] = "تقرير الأسعار";
+    ViewData["Subtitle"] = "تحليل أسعار المواد والتغيرات";
 }
 
 <div class="page-header d-flex justify-content-between align-items-center mb-4 no-print">
     <div>
-        <h1><i class="fas fa-tags me-2"></i>تقرير التسعير</h1>
-        <small class="text-muted">مقارنة أسعار المواد</small>
+        <h1><i class="fas fa-tags text-primary me-2"></i>تقرير الأسعار</h1>
+        <small class="text-muted">تحليل أسعار المواد ومقارنتها</small>
     </div>
     <div>
         <a asp-action="Index" class="btn btn-secondary">
@@ -16,7 +16,7 @@
         <button onclick="window.print()" class="btn btn-info">
             <i class="fas fa-print me-1"></i>طباعة
         </button>
-        <a asp-action="ExportPricingReport" class="btn btn-success">
+        <a asp-action="ExportPricing" class="btn btn-success">
             <i class="fas fa-file-excel me-1"></i>تصدير Excel
         </a>
     </div>
@@ -24,8 +24,8 @@
 
 <!-- Print Header -->
 <div class="print-header text-center mb-4" style="display: none;">
-    <h4>@(Model.InstitutionName ?? "")</h4>
-    <h3>تقرير أسعار المواد</h3>
+    <h4>@Model.InstitutionName</h4>
+    <h3>تقرير الأسعار</h3>
     <p>بتاريخ @DateTime.Now.ToString("yyyy/MM/dd")</p>
 </div>
 
@@ -33,26 +33,26 @@
 <div class="row mb-4">
     <div class="col-md-3">
         <div class="card bg-primary text-white text-center p-3">
-            <h3 class="mb-0">@(Model.Items?.Count ?? 0)</h3>
+            <h3 class="mb-0">@Model.TotalItems</h3>
             <small>عدد المواد</small>
         </div>
     </div>
     <div class="col-md-3">
         <div class="card bg-success text-white text-center p-3">
-            <h3 class="mb-0">@((Model.Items?.Any() == true) ? Model.Items.Average(i => i.CurrentPrice).ToString("N0") : "0")</h3>
-            <small>متوسط السعر (د.ع)</small>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card bg-danger text-white text-center p-3">
-            <h3 class="mb-0">@Model.Items.Count(i => i.PriceChange > 0)</h3>
-            <small>ارتفاع في السعر</small>
+            <h3 class="mb-0">@Model.AveragePrice.ToString("N2")</h3>
+            <small>متوسط السعر</small>
         </div>
     </div>
     <div class="col-md-3">
         <div class="card bg-info text-white text-center p-3">
-            <h3 class="mb-0">@Model.Items.Count(i => i.PriceChange < 0)</h3>
-            <small>انخفاض في السعر</small>
+            <h3 class="mb-0">@Model.HighestPrice.ToString("N0")</h3>
+            <small>أعلى سعر</small>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-secondary text-white text-center p-3">
+            <h3 class="mb-0">@Model.LowestPrice.ToString("N0")</h3>
+            <small>أدنى سعر</small>
         </div>
     </div>
 </div>
@@ -68,27 +68,30 @@
                 <label class="form-label">الفئة</label>
                 <select name="categoryId" class="form-select">
                     <option value="">-- جميع الفئات --</option>
-                    @foreach (var cat in ViewBag.Categories as IEnumerable<Category>)
+                    @if (ViewBag.Categories != null)
                     {
-                        <option value="@cat.Id" selected="@(cat.Id == Model.CategoryId)">@cat.Name</option>
+                        @foreach (var cat in ViewBag.Categories as IEnumerable<WarehouseManagement.Models.Category>)
+                        {
+                            <option value="@cat.Id" selected="@(cat.Id == Model.CategoryId)">@cat.Name</option>
+                        }
                     }
                 </select>
             </div>
-            <div class="col-md-3">
-                <label class="form-label">تغير السعر</label>
-                <select name="priceChange" class="form-select">
-                    <option value="">-- الكل --</option>
-                    <option value="increased" selected="@(Model.PriceChangeFilter == "increased")">ارتفع</option>
-                    <option value="decreased" selected="@(Model.PriceChangeFilter == "decreased")">انخفض</option>
-                    <option value="unchanged" selected="@(Model.PriceChangeFilter == "unchanged")">ثابت</option>
-                </select>
+            <div class="col-md-2">
+                <label class="form-label">السعر من</label>
+                <input type="number" name="minPrice" class="form-control" value="@Model.MinPriceFilter" step="0.01" placeholder="الحد الأدنى">
             </div>
-            <div class="col-md-3">
-                <label class="form-label">ترتيب حسب</label>
+            <div class="col-md-2">
+                <label class="form-label">السعر إلى</label>
+                <input type="number" name="maxPrice" class="form-control" value="@Model.MaxPriceFilter" step="0.01" placeholder="الحد الأقصى">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">الترتيب</label>
                 <select name="sortBy" class="form-select">
                     <option value="name" selected="@(Model.SortBy == "name")">الاسم</option>
-                    <option value="price" selected="@(Model.SortBy == "price")">السعر (الأعلى أولاً)</option>
-                    <option value="change" selected="@(Model.SortBy == "change")">نسبة التغير</option>
+                    <option value="price_asc" selected="@(Model.SortBy == "price_asc")">السعر (تصاعدي)</option>
+                    <option value="price_desc" selected="@(Model.SortBy == "price_desc")">السعر (تنازلي)</option>
+                    <option value="code" selected="@(Model.SortBy == "code")">الرمز</option>
                 </select>
             </div>
             <div class="col-md-3 d-flex align-items-end">
@@ -102,118 +105,159 @@
 
 <!-- Main Report Table -->
 <div class="card">
-    <div class="card-header bg-dark text-white">
-        <i class="fas fa-table me-2"></i>قائمة أسعار المواد
+    <div class="card-header bg-primary text-white">
+        <i class="fas fa-table me-2"></i>قائمة أسعار المواد - @Model.TotalItems عنصر
     </div>
     <div class="card-body p-0">
-        <div class="table-responsive">
-            <table class="table table-bordered table-hover mb-0">
-                <thead class="table-dark">
-                    <tr>
-                        <th class="text-center">ت</th>
-                        <th>رمز المادة</th>
-                        <th>اسم المادة</th>
-                        <th>الفئة</th>
-                        <th class="text-center">الوحدة</th>
-                        <th class="text-center">السعر السابق</th>
-                        <th class="text-center">السعر الحالي</th>
-                        <th class="text-center">الفرق</th>
-                        <th class="text-center">نسبة التغير</th>
-                        <th class="text-center">آخر تحديث</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @{
-                        int index = 1;
-                    }
-                    @foreach (var item in Model.Items)
-                    {
-                        var changeClass = item.PriceChange > 0 ? "text-danger" : item.PriceChange < 0 ? "text-success" : "";
-                        var rowClass = Math.Abs(item.PriceChangePercent) > 10 ? (item.PriceChange > 0 ? "table-danger" : "table-success") : "";
-                        <tr class="@rowClass">
-                            <td class="text-center">@(index++)</td>
-                            <td><code>@item.MaterialCode</code></td>
-                            <td>
-                                <a asp-controller="Materials" asp-action="Details" asp-route-id="@item.MaterialId">
-                                    @item.MaterialName
-                                </a>
-                            </td>
-                            <td>@item.CategoryName</td>
-                            <td class="text-center">@item.Unit</td>
-                            <td class="text-end">@item.PreviousPrice.ToString("N0")</td>
-                            <td class="text-end fw-bold">@item.CurrentPrice.ToString("N0")</td>
-                            <td class="text-center @changeClass">
-                                @if (item.PriceChange != 0)
-                                {
-                                    <span>
-                                        @(item.PriceChange > 0 ? "+" : "")@item.PriceChange.ToString("N0")
-                                    </span>
-                                }
-                                else
-                                {
-                                    <span class="text-muted">-</span>
-                                }
-                            </td>
-                            <td class="text-center">
-                                @if (item.PriceChange != 0)
-                                {
-                                    <span class="badge @(item.PriceChange > 0 ? "bg-danger" : "bg-success")">
-                                        @(item.PriceChange > 0 ? "↑" : "↓") @Math.Abs(item.PriceChangePercent).ToString("F1")%
-                                    </span>
-                                }
-                                else
-                                {
-                                    <span class="badge bg-secondary">ثابت</span>
-                                }
-                            </td>
-                            <td class="text-center">@item.LastUpdated.ToString("yyyy/MM/dd")</td>
+        @if (Model.Items != null && Model.Items.Any())
+        {
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover mb-0">
+                    <thead class="table-dark">
+                        <tr>
+                            <th class="text-center">ت</th>
+                            <th>رمز المادة</th>
+                            <th>اسم المادة</th>
+                            <th>الفئة</th>
+                            <th>الوحدة</th>
+                            <th class="text-center">سعر الشراء</th>
+                            <th class="text-center">سعر الصرف</th>
+                            <th class="text-center">آخر سعر شراء</th>
+                            <th class="text-center">تغير السعر</th>
+                            <th class="text-center">تاريخ آخر شراء</th>
+                            <th class="text-center no-print">الإجراءات</th>
                         </tr>
-                    }
-                </tbody>
-            </table>
-        </div>
+                    </thead>
+                    <tbody>
+                        @{
+                            int index = 1;
+                        }
+                        @foreach (var item in Model.Items)
+                        {
+                            var priceChange = item.LastPurchasePrice - item.PurchasePrice;
+                            var priceChangePercent = item.PurchasePrice > 0 ? (priceChange / item.PurchasePrice * 100) : 0;
+                            <tr>
+                                <td class="text-center">@(index++)</td>
+                                <td><code>@item.MaterialCode</code></td>
+                                <td>@item.MaterialName</td>
+                                <td>@item.CategoryName</td>
+                                <td class="text-center">@item.Unit</td>
+                                <td class="text-center">@item.PurchasePrice.ToString("N2")</td>
+                                <td class="text-center">@item.IssuePrice.ToString("N2")</td>
+                                <td class="text-center">
+                                    @if (item.LastPurchasePrice > 0)
+                                    {
+                                        @item.LastPurchasePrice.ToString("N2")
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">-</span>
+                                    }
+                                </td>
+                                <td class="text-center">
+                                    @if (priceChange != 0)
+                                    {
+                                        var changeClass = priceChange > 0 ? "text-danger" : "text-success";
+                                        var changeIcon = priceChange > 0 ? "fa-arrow-up" : "fa-arrow-down";
+                                        <span class="@changeClass">
+                                            <i class="fas @changeIcon me-1"></i>
+                                            @Math.Abs(priceChangePercent).ToString("F1")%
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">-</span>
+                                    }
+                                </td>
+                                <td class="text-center">
+                                    @if (item.LastPurchaseDate.HasValue)
+                                    {
+                                        @item.LastPurchaseDate.Value.ToString("yyyy/MM/dd")
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">-</span>
+                                    }
+                                </td>
+                                <td class="text-center no-print">
+                                    <div class="btn-group btn-group-sm">
+                                        <a asp-controller="Materials" asp-action="Details" asp-route-id="@item.MaterialId"
+                                           class="btn btn-info" title="تفاصيل">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a asp-controller="Materials" asp-action="Edit" asp-route-id="@item.MaterialId"
+                                           class="btn btn-warning" title="تعديل السعر">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <a asp-controller="Materials" asp-action="PriceHistory" asp-route-id="@item.MaterialId"
+                                           class="btn btn-secondary" title="سجل الأسعار">
+                                            <i class="fas fa-history"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                    <tfoot class="table-secondary fw-bold">
+                        <tr>
+                            <td colspan="5" class="text-start">الإحصائيات</td>
+                            <td class="text-center">متوسط: @Model.AveragePrice.ToString("N2")</td>
+                            <td class="text-center">-</td>
+                            <td class="text-center">-</td>
+                            <td colspan="3"></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="text-center py-5">
+                <i class="fas fa-info-circle fa-4x text-info mb-3"></i>
+                <h5>لا توجد مواد مطابقة للبحث</h5>
+                <p class="text-muted">جرب تعديل معايير البحث</p>
+            </div>
+        }
     </div>
 </div>
 
-<!-- Summary by Category -->
-<div class="card mt-4">
-    <div class="card-header">
-        <i class="fas fa-chart-bar me-2"></i>ملخص حسب الفئة
+<!-- Price Summary by Category -->
+@if (Model.Items != null && Model.Items.Any())
+{
+    <div class="card mt-4">
+        <div class="card-header">
+            <i class="fas fa-chart-bar me-2"></i>ملخص الأسعار حسب الفئة
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered">
+                    <thead class="table-light">
+                        <tr>
+                            <th>الفئة</th>
+                            <th class="text-center">عدد المواد</th>
+                            <th class="text-center">أدنى سعر</th>
+                            <th class="text-center">أعلى سعر</th>
+                            <th class="text-center">متوسط السعر</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var group in Model.Items.GroupBy(i => i.CategoryName))
+                        {
+                            var prices = group.Select(i => i.PurchasePrice).ToList();
+                            <tr>
+                                <td>@group.Key</td>
+                                <td class="text-center">@group.Count()</td>
+                                <td class="text-center text-success">@prices.Min().ToString("N2")</td>
+                                <td class="text-center text-danger">@prices.Max().ToString("N2")</td>
+                                <td class="text-center">@prices.Average().ToString("N2")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
-    <div class="card-body p-0">
-        <table class="table table-bordered mb-0">
-            <thead class="table-light">
-                <tr>
-                    <th>الفئة</th>
-                    <th class="text-center">عدد المواد</th>
-                    <th class="text-center">متوسط السعر</th>
-                    <th class="text-center">ارتفاع</th>
-                    <th class="text-center">انخفاض</th>
-                    <th class="text-center">ثابت</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var cat in Model.Items.GroupBy(i => i.CategoryName))
-                {
-                    <tr>
-                        <td>@cat.Key</td>
-                        <td class="text-center">@cat.Count()</td>
-                        <td class="text-end">@cat.Average(i => i.CurrentPrice).ToString("N0")</td>
-                        <td class="text-center">
-                            <span class="badge bg-danger">@cat.Count(i => i.PriceChange > 0)</span>
-                        </td>
-                        <td class="text-center">
-                            <span class="badge bg-success">@cat.Count(i => i.PriceChange < 0)</span>
-                        </td>
-                        <td class="text-center">
-                            <span class="badge bg-secondary">@cat.Count(i => i.PriceChange == 0)</span>
-                        </td>
-                    </tr>
-                }
-            </tbody>
-        </table>
-    </div>
-</div>
+}
 
 @section Styles {
     <style>
@@ -221,7 +265,7 @@
             .no-print { display: none !important; }
             .print-header { display: block !important; }
             .card { border: 1px solid #000 !important; }
-            body { font-size: 12px; }
+            body { font-size: 11px; }
         }
     </style>
 }

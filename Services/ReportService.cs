@@ -217,7 +217,6 @@ namespace WarehouseManagement.Services
                 Purchases = material.Purchases.ToList(),
                 TotalQuantityPurchased = material.Purchases.Sum(p => p.Quantity),
                 TotalAmountSpent = material.Purchases.Sum(p => p.TotalPrice),
-                AveragePrice = material.AveragePrice,
                 CurrentValue = material.TotalValue,
                 FirstPurchaseDate = material.Purchases.FirstOrDefault()?.PurchaseDate,
                 LastPurchaseDate = material.Purchases.LastOrDefault()?.PurchaseDate

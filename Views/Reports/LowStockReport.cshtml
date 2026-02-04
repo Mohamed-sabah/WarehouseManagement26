@@ -1,4 +1,4 @@
-@model LowStockReportViewModel
+@model WarehouseManagement.Models.ViewModels.LowStockReportViewModel
 @{
     ViewData["Title"] = "تقرير المخزون المنخفض";
     ViewData["Subtitle"] = "المواد التي تحتاج إعادة تزويد";
@@ -51,7 +51,7 @@
     </div>
     <div class="col-md-3">
         <div class="card bg-secondary text-white text-center p-3">
-            <h3 class="mb-0">@Model.Items.Sum(i => i.ShortageQuantity)</h3>
+            <h3 class="mb-0">@Model.TotalShortage</h3>
             <small>إجمالي النقص</small>
         </div>
     </div>
@@ -68,9 +68,12 @@
                 <label class="form-label">الفئة</label>
                 <select name="categoryId" class="form-select">
                     <option value="">-- جميع الفئات --</option>
-                    @foreach (var cat in ViewBag.Categories as IEnumerable<Category>)
+                    @if (ViewBag.Categories != null)
                     {
-                        <option value="@cat.Id" selected="@(cat.Id == Model.CategoryId)">@cat.Name</option>
+                        @foreach (var cat in ViewBag.Categories as IEnumerable<Category>)
+                        {
+                            <option value="@cat.Id" selected="@(cat.Id == Model.CategoryId)">@cat.Name</option>
+                        }
                     }
                 </select>
             </div>
@@ -78,9 +81,12 @@
                 <label class="form-label">الموقع</label>
                 <select name="locationId" class="form-select">
                     <option value="">-- جميع المواقع --</option>
-                    @foreach (var loc in ViewBag.Locations as IEnumerable<Location>)
+                    @if (ViewBag.Locations != null)
                     {
-                        <option value="@loc.Id" selected="@(loc.Id == Model.LocationId)">@loc.Name</option>
+                        @foreach (var loc in ViewBag.Locations as IEnumerable<Location>)
+                        {
+                            <option value="@loc.Id" selected="@(loc.Id == Model.LocationId)">@loc.Name</option>
+                        }
                     }
                 </select>
             </div>
@@ -105,7 +111,7 @@
 <!-- Main Report Table -->
 <div class="card">
     <div class="card-header bg-warning text-dark">
-        <i class="fas fa-table me-2"></i>قائمة المواد ذات المخزون المنخفض - @Model.Items.Count عنصر
+        <i class="fas fa-table me-2"></i>قائمة المواد ذات المخزون المنخفض - @Model.TotalItems عنصر
     </div>
     <div class="card-body p-0">
         @if (Model.Items.Any())
@@ -131,7 +137,7 @@
                         @{
                             int index = 1;
                         }
-                        @foreach (var item in Model.Items.OrderBy(i => (double)i.CurrentQuantity / Math.Max(1, i.MinimumStock)))
+                        @foreach (var item in Model.Items)
                         {
                             var percentage = item.MinimumStock > 0 ? ((double)item.CurrentQuantity / item.MinimumStock * 100) : 0;
                             var rowClass = item.CurrentQuantity == 0 ? "table-danger" : percentage < 50 ? "table-warning" : "";
@@ -195,7 +201,7 @@
                     <tfoot class="table-secondary fw-bold">
                         <tr>
                             <td colspan="7" class="text-start">المجموع</td>
-                            <td class="text-center">@Model.Items.Sum(i => i.ShortageQuantity)</td>
+                            <td class="text-center">@Model.TotalShortage</td>
                             <td colspan="3"></td>
                         </tr>
                     </tfoot>

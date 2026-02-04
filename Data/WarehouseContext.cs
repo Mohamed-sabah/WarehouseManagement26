@@ -18,7 +18,7 @@ namespace WarehouseManagement.Data
         public DbSet<Transfer> Transfers { get; set; }
         public DbSet<InventoryRecord> InventoryRecords { get; set; }
         public DbSet<ConsumptionRecord> ConsumptionRecords { get; set; }
-
+        public DbSet<Department> Departments { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             ConfigureMaterial(modelBuilder);

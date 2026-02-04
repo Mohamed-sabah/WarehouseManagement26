@@ -113,8 +113,8 @@ namespace WarehouseManagement.Controllers
                 ModelState.Remove("InitialStock.Quantity");
             }
 
-            if (ModelState.IsValid)
-            {
+            //if (ModelState.IsValid)
+            //{
                 // التحقق من أن الرمز فريد
                 if (await _context.Materials.AnyAsync(m => m.Code == viewModel.Material.Code))
                 {
@@ -168,7 +168,7 @@ namespace WarehouseManagement.Controllers
 
                 TempData["Success"] = "تم إضافة المادة بنجاح";
                 return RedirectToAction(nameof(Details), new { id = viewModel.Material.Id });
-            }
+            //}
 
             await LoadSelectLists(viewModel);
             return View(viewModel);

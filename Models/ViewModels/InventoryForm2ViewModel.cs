@@ -34,6 +34,14 @@ public class InventoryForm2ViewModel
     public int MatchingCount => Items?.Count(i => i.ActualQuantity == i.RecordedQuantity) ?? 0;
     public int ShortageCount => Items?.Count(i => i.ActualQuantity < i.RecordedQuantity) ?? 0;
     public int SurplusCount => Items?.Count(i => i.ActualQuantity > i.RecordedQuantity) ?? 0;
+
+    public string FormNumber { get; internal set; }
+    public string WarehouseKeeper { get; internal set; }
+    public string CommitteeHead { get; internal set; }
+    public int? CategoryId { get; internal set; }
+    public int? LocationId { get; internal set; }
+
+ 
 }
 
 public class ItemViewModel

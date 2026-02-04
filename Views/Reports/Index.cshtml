@@ -1,123 +1,149 @@
 @{
     ViewData["Title"] = "التقارير";
-    ViewData["Breadcrumb"] = "تقارير وإحصائيات النظام";
-
+    ViewData["Subtitle"] = "جميع تقارير نظام إدارة المخازن";
 }
 
-<div class="page-header">
-    <h1><i class="bi bi-file-earmark-bar-graph me-2"></i>التقارير</h1>
+<div class="page-header mb-4">
+    <h1><i class="fas fa-chart-bar text-primary me-2"></i>التقارير</h1>
+    <small class="text-muted">اختر التقرير المطلوب من القائمة أدناه</small>
 </div>
 
-<div class="row g-4">
-    <!-- Inventory Reports -->
-    <div class="col-12">
-        <h5 class="mb-3 text-primary"><i class="bi bi-boxes me-2"></i>تقارير المخزون</h5>
-    </div>
-    
-    <div class="col-md-4">
-        <div class="card h-100">
-            <div class="card-body text-center">
-                <i class="fas fa-coins fa-3x text-primary mb-3"></i>
-                <h5>تقرير المواد</h5>
-                <p class="text-muted">قائمة شاملة بجميع المواد</p>
-          
-                <a asp-action="MaterialsValue" class="btn btn-primary">عرض التقرير</a>
-            </div>
-        </div>
-    </div>
-
-    
-    <div class="col-md-4">
-        <div class="card h-100">
-            <div class="card-body text-center">
-             @*    <i class="bi bi-geo-alt display-4 text-success mb-3"></i> *@
-                <i class="fas fa-exchange-alt fa-3x text-secondary mb-3"></i>
-                <h5>تقرير الموقع</h5>
-                <p class="text-muted">مخزون موقع محدد</p>
-                <a asp-action="LocationReport" class="btn btn-success">عرض التقرير</a>
-            </div>
-        </div>
-    </div>
-    
-    <div class="col-md-4">
-        <div class="card h-100">
-            <div class="card-body text-center">
-               @*  <i class="bi bi-exclamation-triangle display-4 text-warning mb-3"></i> *@
-                <i class="fas fa-exclamation-triangle fa-3x text-danger mb-3"></i>
-                <h5>المخزون المنخفض</h5>
-                <p class="text-muted">المواد التي تحتاج إعادة تزويد</p>
-                <a asp-action="LowStockReport" class="btn btn-warning">عرض التقرير</a>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-md-4">
-        <div class="card h-100">
-            <div class="card-body text-center">
-        @*         <i class="bi bi-clock-history display-4 text-danger mb-3"></i> *@
-                <i class="fas fa-calendar-times fa-3x text-danger mb-3"></i>
-                <h5>قرب انتهاء الصلاحية</h5>
-                <p class="text-muted">المواد المنتهية أو قرب الانتهاء</p>
-                <a asp-action="ExpiryReport" class="btn btn-danger">عرض التقرير</a>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-md-4">
-        <div class="card h-100">
-            <div class="card-body text-center">
-               @*  <i class="bi bi-calculator display-4 text-info mb-3"></i> *@
-                <i class="fas fa-shopping-cart fa-3x text-success mb-3"></i>
-                <h5>تقرير الأسعار</h5>
-                <p class="text-muted">تاريخ أسعار مادة محددة</p>
-                <a asp-action="PricingReport" class="btn btn-info">عرض التقرير</a>
-            </div>
-        </div>
-    </div>
-
-    <!-- Purchase Reports -->
-    <div class="col-12 mt-4">
-        <h5 class="mb-3 text-primary"><i class="bi bi-cart-plus me-2"></i>تقارير المشتريات</h5>
-    </div>
-    
-    <div class="col-md-4">
-        <div class="card h-100">
-            <div class="card-body text-center">
-            @*     <i class="bi bi-calendar3 display-4 text-primary mb-3"></i> *@
-                <i class="fas fa-clipboard-list fa-3x text-info mb-3"></i>
-                <h5>التقرير السنوي للمشتريات</h5>
-                <p class="text-muted">ملخص مشتريات السنة</p>
-                <a asp-action="PurchasesYearly" class="btn btn-primary">عرض التقرير</a>
-            </div>
-        </div>
-    </div>
-
-    <!-- Government Forms -->
-    <div class="col-12 mt-4">
-        <h5 class="mb-3 text-primary"><i class="bi bi-file-earmark-text me-2"></i>النماذج الحكومية</h5>
-    </div>
-    
-    <div class="col-md-4">
+<div class="row">
+    <!-- تقارير المواد -->
+    <div class="col-md-6 col-lg-4 mb-4">
         <div class="card h-100 border-primary">
-            <div class="card-body text-center">
-              @*   <i class="bi bi-clipboard-check display-4 text-primary mb-3"></i> *@
-                <i class="fas fa-file-invoice fa-3x text-secondary mb-3"></i>
-                <h5>نموذج رقم (2)</h5>
-                <p class="text-muted">قائمة بموجودات المخازن</p>
-                <a asp-action="InventoryForm2" class="btn btn-outline-primary">عرض النموذج</a>
+            <div class="card-header bg-primary text-white">
+                <i class="fas fa-boxes me-2"></i>تقارير المواد
+            </div>
+            <div class="card-body">
+                <div class="list-group list-group-flush">
+                    <a asp-action="MaterialsReport" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                        <span><i class="fas fa-list me-2 text-primary"></i>تقرير المواد</span>
+                        <i class="fas fa-chevron-left"></i>
+                    </a>
+                    <a asp-action="MaterialsValue" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                        <span><i class="fas fa-dollar-sign me-2 text-success"></i>تقرير قيمة المواد</span>
+                        <i class="fas fa-chevron-left"></i>
+                    </a>
+                    <a asp-action="PricingReport" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                        <span><i class="fas fa-tags me-2 text-info"></i>تقرير الأسعار</span>
+                        <i class="fas fa-chevron-left"></i>
+                    </a>
+                </div>
             </div>
         </div>
     </div>
-    
-    <div class="col-md-4">
-        <div class="card h-100 border-danger">
-            <div class="card-body text-center">
-              @*   <i class="bi bi-trash3 display-4 text-danger mb-3"></i> *@
-                <i class="fas fa-file-invoice fa-3x text-warning mb-3"></i>
-                <h5>نموذج رقم (5)</h5>
-                <p class="text-muted">قائمة بالموجودات المستهلكة</p>
-                <a asp-action="ConsumptionForm5" class="btn btn-outline-danger">عرض النموذج</a>
+
+    <!-- تقارير المخزون -->
+    <div class="col-md-6 col-lg-4 mb-4">
+        <div class="card h-100 border-warning">
+            <div class="card-header bg-warning text-dark">
+                <i class="fas fa-warehouse me-2"></i>تقارير المخزون
+            </div>
+            <div class="card-body">
+                <div class="list-group list-group-flush">
+                    <a asp-action="LowStockReport" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                        <span><i class="fas fa-exclamation-triangle me-2 text-warning"></i>المخزون المنخفض</span>
+                        <i class="fas fa-chevron-left"></i>
+                    </a>
+                    <a asp-action="ExpiryReport" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                        <span><i class="fas fa-calendar-times me-2 text-danger"></i>انتهاء الصلاحية</span>
+                        <i class="fas fa-chevron-left"></i>
+                    </a>
+                    <a asp-action="LocationReport" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                        <span><i class="fas fa-map-marker-alt me-2 text-secondary"></i>تقرير المواقع</span>
+                        <i class="fas fa-chevron-left"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- تقارير المشتريات -->
+    <div class="col-md-6 col-lg-4 mb-4">
+        <div class="card h-100 border-success">
+            <div class="card-header bg-success text-white">
+                <i class="fas fa-shopping-cart me-2"></i>تقارير المشتريات
+            </div>
+            <div class="card-body">
+                <div class="list-group list-group-flush">
+                    <a asp-action="PurchasesYearly" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                        <span><i class="fas fa-chart-line me-2 text-success"></i>التقرير السنوي</span>
+                        <i class="fas fa-chevron-left"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- النماذج الحكومية -->
+    <div class="col-md-6 col-lg-4 mb-4">
+        <div class="card h-100 border-info">
+            <div class="card-header bg-info text-white">
+                <i class="fas fa-file-alt me-2"></i>النماذج الحكومية
+            </div>
+            <div class="card-body">
+                <div class="list-group list-group-flush">
+                    <a asp-action="InventoryForm2" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                        <span><i class="fas fa-clipboard-list me-2 text-primary"></i>نموذج 2 - الجرد السنوي</span>
+                        <i class="fas fa-chevron-left"></i>
+                    </a>
+                    <a asp-action="ConsumptionForm5" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                        <span><i class="fas fa-file-invoice me-2 text-info"></i>نموذج 5 - سجل الصرف</span>
+                        <i class="fas fa-chevron-left"></i>
+                    </a>
+                </div>
             </div>
         </div>
     </div>
 </div>
+
+<!-- Quick Stats -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-tachometer-alt me-2"></i>نظرة سريعة
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-3">
+                        <div class="border-end">
+                            <h4 class="text-primary mb-0" id="totalMaterials">--</h4>
+                            <small class="text-muted">إجمالي المواد</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="border-end">
+                            <h4 class="text-warning mb-0" id="lowStockCount">--</h4>
+                            <small class="text-muted">مخزون منخفض</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="border-end">
+                            <h4 class="text-danger mb-0" id="expiringCount">--</h4>
+                            <small class="text-muted">قريب الانتهاء</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <h4 class="text-success mb-0" id="totalValue">--</h4>
+                        <small class="text-muted">إجمالي القيمة</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // يمكن إضافة AJAX لجلب الإحصائيات السريعة
+        $(document).ready(function() {
+            // Placeholder - يمكن استبداله بـ AJAX call
+            $('#totalMaterials').text('...');
+            $('#lowStockCount').text('...');
+            $('#expiringCount').text('...');
+            $('#totalValue').text('...');
+        });
+    </script>
+}
