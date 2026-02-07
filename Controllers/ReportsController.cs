@@ -116,7 +116,6 @@ namespace WarehouseManagement.Controllers
         {
             if (id == null)
             {
-                // عرض ملخص جميع المواقع
                 var locations = await _context.Locations
                     .Include(l => l.Stocks)
                         .ThenInclude(s => s.Material)
@@ -154,7 +153,6 @@ namespace WarehouseManagement.Controllers
                 return View(viewModel);
             }
 
-            // عرض تفاصيل موقع واحد
             var location = await _context.Locations
                 .Include(l => l.Stocks)
                     .ThenInclude(s => s.Material)
@@ -260,7 +258,6 @@ namespace WarehouseManagement.Controllers
                 .Where(s => s.ExpiryDate.HasValue && s.Quantity > 0)
                 .AsQueryable();
 
-            // تصفية حسب الفترة
             var today = DateTime.Today;
             if (!string.IsNullOrEmpty(period))
             {
@@ -271,12 +268,11 @@ namespace WarehouseManagement.Controllers
                     "3months" => query.Where(s => s.ExpiryDate >= today && s.ExpiryDate <= today.AddMonths(3)),
                     "6months" => query.Where(s => s.ExpiryDate >= today && s.ExpiryDate <= today.AddMonths(6)),
                     "year" => query.Where(s => s.ExpiryDate >= today && s.ExpiryDate <= today.AddYears(1)),
-                    _ => query.Where(s => s.ExpiryDate <= today.AddYears(1)) // الكل خلال سنة
+                    _ => query.Where(s => s.ExpiryDate <= today.AddYears(1))
                 };
             }
             else
             {
-                // الافتراضي: عرض كل المواد خلال سنة
                 query = query.Where(s => s.ExpiryDate <= today.AddYears(1));
             }
 
@@ -346,20 +342,18 @@ namespace WarehouseManagement.Controllers
                     CategoryName = m.Category?.Name ?? "-",
                     Unit = m.Unit,
                     PurchasePrice = m.AveragePrice,
-                    IssuePrice = m.AveragePrice, // نفس السعر افتراضياً
+                    IssuePrice = m.AveragePrice,
                     LastPurchasePrice = currentPrice,
                     LastPurchaseDate = purchases.FirstOrDefault()?.PurchaseDate
                 };
             }).AsEnumerable();
 
-            // تصفية حسب نطاق السعر
             if (minPrice.HasValue)
                 items = items.Where(i => i.PurchasePrice >= minPrice.Value);
-            
+
             if (maxPrice.HasValue)
                 items = items.Where(i => i.PurchasePrice <= maxPrice.Value);
 
-            // الترتيب
             items = sortBy switch
             {
                 "price_asc" => items.OrderBy(i => i.PurchasePrice),
@@ -394,11 +388,12 @@ namespace WarehouseManagement.Controllers
 
         #region Purchase Reports
 
-        // GET: Reports/PurchasesYearly
+        // GET: Reports/PurchasesYearly - إصلاح خطأ LINQ
         public async Task<IActionResult> PurchasesYearly(int? year)
         {
             year ??= DateTime.Now.Year;
 
+            // جلب البيانات أولاً ثم حساب الإجماليات في الذاكرة
             var purchases = await _context.Purchases
                 .Include(p => p.Material)
                     .ThenInclude(m => m.Category)
@@ -407,10 +402,13 @@ namespace WarehouseManagement.Controllers
                 .OrderBy(p => p.PurchaseDate)
                 .ToListAsync();
 
-            // بيانات السنة السابقة للمقارنة
+            // جلب بيانات السنة السابقة أيضاً في الذاكرة
             var previousYearPurchases = await _context.Purchases
                 .Where(p => p.PurchaseDate.Year == year - 1)
-                .SumAsync(p => p.TotalPrice);
+                .ToListAsync();
+
+            // حساب الإجمالي في الذاكرة بدلاً من SQL
+            var previousYearTotal = previousYearPurchases.Sum(p => p.TotalPrice);
 
             var viewModel = new PurchasesYearlyReportViewModel
             {
@@ -419,7 +417,7 @@ namespace WarehouseManagement.Controllers
                 TotalPurchases = purchases.Sum(p => p.TotalPrice),
                 TotalOrders = purchases.Count,
                 TotalSuppliers = purchases.Where(p => !string.IsNullOrEmpty(p.Supplier)).Select(p => p.Supplier).Distinct().Count(),
-                PreviousYearTotal = previousYearPurchases,
+                PreviousYearTotal = previousYearTotal,
 
                 MonthlyData = Enumerable.Range(1, 12).Select(month => new MonthlyPurchaseDataViewModel
                 {
@@ -470,7 +468,6 @@ namespace WarehouseManagement.Controllers
         {
             year ??= DateTime.Now.Year;
 
-            // استخدام MaterialStocks بدلاً من InventoryRecords لأنها أكثر شيوعاً
             var query = _context.MaterialStocks
                 .Include(s => s.Material)
                     .ThenInclude(m => m.Category)
@@ -488,7 +485,8 @@ namespace WarehouseManagement.Controllers
                                     .ThenBy(s => s.Material.Name)
                                     .ToListAsync();
 
-            var viewModel = new InventoryForm2ViewModel
+            // استخدام النوع الصحيح من namespace المشروع
+            var viewModel = new WarehouseManagement.Models.ViewModels.InventoryForm2ViewModel
             {
                 Year = year.Value,
                 InventoryDate = DateTime.Now,
@@ -500,14 +498,14 @@ namespace WarehouseManagement.Controllers
                 CategoryId = categoryId,
                 LocationId = locationId,
 
-                Items = stocks.Select(s => new InventoryForm2ItemViewModel
+                Items = stocks.Select(s => new WarehouseManagement.Models.ViewModels.InventoryForm2ItemViewModel
                 {
                     MaterialCode = s.Material.Code,
                     MaterialName = s.Material.Name,
                     Unit = s.Material.Unit,
                     BookQuantity = s.Quantity,
                     BookValue = s.CurrentValue,
-                    ActualQuantity = s.Quantity, // الافتراضي: الفعلي = الدفتري
+                    ActualQuantity = s.Quantity,
                     ActualValue = s.CurrentValue,
                     Notes = ""
                 }).ToList()
@@ -528,9 +526,7 @@ namespace WarehouseManagement.Controllers
             var startDate = new DateTime(year.Value, month.Value, 1);
             var endDate = startDate.AddMonths(1).AddDays(-1);
 
-            // استخدام جدول بديل إذا لم يكن ConsumptionRecords موجوداً
-            // هنا نفترض وجود جدول Consumptions أو نستخدم بيانات تجريبية
-            var viewModel = new ConsumptionForm5ViewModel
+            var viewModel = new WarehouseManagement.Models.ViewModels.ConsumptionForm5ViewModel
             {
                 Year = year.Value,
                 Month = month.Value,
@@ -540,29 +536,35 @@ namespace WarehouseManagement.Controllers
                 InstitutionName = "المؤسسة",
                 WarehouseName = "المخزن الرئيسي",
                 WarehouseKeeper = "أمين المخزن",
-                Items = new List<ConsumptionForm5ItemViewModel>()
+                Items = new List<WarehouseManagement.Models.ViewModels.ConsumptionForm5ItemViewModel>()
             };
 
-            // محاولة جلب البيانات من جدول Consumptions إذا كان موجوداً
-            try
-            {
-                var consumptions = await _context.Set<dynamic>()
-                    .FromSqlRaw(@"SELECT c.*, m.Code as MaterialCode, m.Name as MaterialName, m.Unit, 
-                                  cat.Name as CategoryName, d.Name as DepartmentName
-                                  FROM Consumptions c
-                                  JOIN Materials m ON c.MaterialId = m.Id
-                                  LEFT JOIN Categories cat ON m.CategoryId = cat.Id
-                                  LEFT JOIN Departments d ON c.DepartmentId = d.Id
-                                  WHERE c.IssueDate >= {0} AND c.IssueDate <= {1}", startDate, endDate)
-                    .ToListAsync();
-            }
-            catch
-            {
-                // إذا لم يكن الجدول موجوداً، نعرض رسالة فارغة
-            }
+            // جلب سجلات الاستهلاك
+            var consumptions = await _context.ConsumptionRecords
+                .Include(c => c.InventoryRecord)
+                    .ThenInclude(i => i.Material)
+                        .ThenInclude(m => m.Category)
+                .Where(c => c.ReportDate >= startDate && c.ReportDate <= endDate)
+                .ToListAsync();
 
-            // قائمة الأقسام للفلتر
-            ViewBag.Departments = await _context.Set<Department>().OrderBy(d => d.Name).ToListAsync();
+            if (categoryId.HasValue)
+                consumptions = consumptions.Where(c => c.InventoryRecord.Material.CategoryId == categoryId.Value).ToList();
+
+            viewModel.Items = consumptions.Select(c => new WarehouseManagement.Models.ViewModels.ConsumptionForm5ItemViewModel
+            {
+                IssueDate = c.ReportDate,
+                IssueNumber = c.Id.ToString(),
+                MaterialCode = c.InventoryRecord.Material.Code,
+                MaterialName = c.InventoryRecord.Material.Name,
+                CategoryName = c.InventoryRecord.Material.Category?.Name ?? "-",
+                Unit = c.InventoryRecord.Material.Unit,
+                Quantity = c.ConsumedQuantity,
+                UnitPrice = c.OriginalUnitPrice,
+                DepartmentName = c.InventoryRecord.Department ?? "-",
+                ReceivedBy = c.CreatedBy ?? "-",
+                Notes = c.Notes
+            }).ToList();
+
             ViewBag.Categories = await _context.Categories.Where(c => c.IsActive).OrderBy(c => c.Name).ToListAsync();
 
             return View(viewModel);
@@ -572,56 +574,48 @@ namespace WarehouseManagement.Controllers
 
         #region Export Actions
 
-        // تصدير تقرير نموذج 2
         public IActionResult ExportForm2(int year)
         {
             TempData["Info"] = "سيتم إضافة خاصية التصدير قريباً";
             return RedirectToAction(nameof(InventoryForm2), new { year });
         }
 
-        // تصدير تقرير نموذج 5
         public IActionResult ExportForm5(int year, int month)
         {
             TempData["Info"] = "سيتم إضافة خاصية التصدير قريباً";
             return RedirectToAction(nameof(ConsumptionForm5), new { year, month });
         }
 
-        // تصدير تقرير قيمة المواد
         public IActionResult ExportMaterialsValue()
         {
             TempData["Info"] = "سيتم إضافة خاصية التصدير قريباً";
             return RedirectToAction(nameof(MaterialsValue));
         }
 
-        // تصدير تقرير المخزون المنخفض
         public IActionResult ExportLowStock()
         {
             TempData["Info"] = "سيتم إضافة خاصية التصدير قريباً";
             return RedirectToAction(nameof(LowStockReport));
         }
 
-        // تصدير تقرير انتهاء الصلاحية
         public IActionResult ExportExpiry()
         {
             TempData["Info"] = "سيتم إضافة خاصية التصدير قريباً";
             return RedirectToAction(nameof(ExpiryReport));
         }
 
-        // تصدير تقرير الأسعار
         public IActionResult ExportPricing()
         {
             TempData["Info"] = "سيتم إضافة خاصية التصدير قريباً";
             return RedirectToAction(nameof(PricingReport));
         }
 
-        // تصدير التقرير السنوي للمشتريات
         public IActionResult ExportPurchasesYearly(int year)
         {
             TempData["Info"] = "سيتم إضافة خاصية التصدير قريباً";
             return RedirectToAction(nameof(PurchasesYearly), new { year });
         }
 
-        // تصدير تقرير المواقع
         public IActionResult ExportLocationReport()
         {
             TempData["Info"] = "سيتم إضافة خاصية التصدير قريباً";

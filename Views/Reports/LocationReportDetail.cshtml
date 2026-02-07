@@ -1,0 +1,183 @@
+@model WarehouseManagement.Models.ViewModels.LocationReportViewModel
+@{
+    ViewData["Title"] = $"تقرير موقع: {Model.Location?.Name}";
+}
+
+<div class="container-fluid" dir="rtl">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="bi bi-building me-2"></i>
+                        تقرير موقع: @Model.Location?.Name
+                    </h5>
+                    <div>
+                        <a href="@Url.Action("LocationReport")" class="btn btn-outline-light btn-sm me-2">
+                            <i class="bi bi-arrow-right"></i> رجوع
+                        </a>
+                        <button class="btn btn-light btn-sm" onclick="window.print()">
+                            <i class="bi bi-printer me-1"></i> طباعة
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- معلومات الموقع -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <th class="text-muted" style="width: 150px;">اسم الموقع:</th>
+                                    <td>@Model.Location?.Name</td>
+                                </tr>
+                                <tr>
+                                    <th class="text-muted">رمز الموقع:</th>
+                                    <td><code>@Model.Location?.Code</code></td>
+                                </tr>
+                                <tr>
+                                    <th class="text-muted">نوع الموقع:</th>
+                                    <td>@Model.Location?.Type</td>
+                                </tr>
+                                @if (!string.IsNullOrEmpty(Model.Location?.ResponsiblePerson))
+                                {
+                                    <tr>
+                                        <th class="text-muted">المسؤول:</th>
+                                        <td>@Model.Location.ResponsiblePerson</td>
+                                    </tr>
+                                }
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="row">
+                                <div class="col-4">
+                                    <div class="card bg-info text-white text-center">
+                                        <div class="card-body py-3">
+                                            <h4 class="mb-0">@Model.TotalItems</h4>
+                                            <small>مادة</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="card bg-success text-white text-center">
+                                        <div class="card-body py-3">
+                                            <h4 class="mb-0">@Model.TotalQuantity.ToString("N0")</h4>
+                                            <small>كمية</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="card bg-warning text-dark text-center">
+                                        <div class="card-body py-3">
+                                            <h4 class="mb-0">@Model.TotalValue.ToString("N0")</h4>
+                                            <small>قيمة (د.ع)</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- جدول المواد -->
+                    <h6 class="border-bottom pb-2 mb-3">
+                        <i class="bi bi-box-seam me-1"></i>
+                        المواد في هذا الموقع
+                    </h6>
+
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover table-striped">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th class="text-center" style="width: 50px;">#</th>
+                                    <th>رمز المادة</th>
+                                    <th>اسم المادة</th>
+                                    <th>الفئة</th>
+                                    <th>الوحدة</th>
+                                    <th class="text-center">الكمية</th>
+                                    <th class="text-center">سعر الوحدة</th>
+                                    <th class="text-center">القيمة</th>
+                                    <th>الحالة</th>
+                                    <th class="text-center">إجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (Model.Stocks != null && Model.Stocks.Any())
+                                {
+                                    var index = 1;
+                                    foreach (var stock in Model.Stocks)
+                                    {
+                                        <tr class="@(stock.Quantity <= stock.Material.MinimumStock ? "table-warning" : "")">
+                                            <td class="text-center">@index</td>
+                                            <td><code>@stock.Material.Code</code></td>
+                                            <td>@stock.Material.Name</td>
+                                            <td>@(stock.Material.Category?.Name ?? "-")</td>
+                                            <td>@stock.Material.Unit</td>
+                                            <td class="text-center">@stock.Quantity</td>
+                                            <td class="text-center">@stock.Material.AveragePrice.ToString("N0")</td>
+                                            <td class="text-center">@stock.CurrentValue.ToString("N0")</td>
+                                            <td>
+                                                @if (stock.IsExpired)
+                                                {
+                                                    <span class="badge bg-danger">منتهي الصلاحية</span>
+                                                }
+                                                else if (stock.IsExpiringSoon)
+                                                {
+                                                    <span class="badge bg-warning text-dark">قرب الانتهاء</span>
+                                                }
+                                                else if (stock.Quantity <= stock.Material.MinimumStock)
+                                                {
+                                                    <span class="badge bg-warning text-dark">مخزون منخفض</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-success">جيد</span>
+                                                }
+                                            </td>
+                                            <td class="text-center">
+                                                <a href="@Url.Action("Details", "Stock", new { id = stock.Id })" 
+                                                   class="btn btn-sm btn-outline-primary">
+                                                    <i class="bi bi-eye"></i>
+                                                </a>
+                                            </td>
+                                        </tr>
+                                        index++;
+                                    }
+                                }
+                                else
+                                {
+                                    <tr>
+                                        <td colspan="10" class="text-center text-muted py-4">
+                                            <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                                            لا توجد مواد في هذا الموقع
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                            @if (Model.Stocks != null && Model.Stocks.Any())
+                            {
+                                <tfoot class="table-light">
+                                    <tr>
+                                        <th colspan="5" class="text-end">الإجمالي:</th>
+                                        <th class="text-center">@Model.TotalQuantity.ToString("N0")</th>
+                                        <th></th>
+                                        <th class="text-center">@Model.TotalValue.ToString("N0")</th>
+                                        <th colspan="2"></th>
+                                    </tr>
+                                </tfoot>
+                            }
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Styles {
+    <style>
+        @@media print {
+            .btn {
+                display: none !important;
+            }
+        }
+    </style>
+}

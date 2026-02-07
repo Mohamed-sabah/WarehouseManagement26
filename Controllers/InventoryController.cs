@@ -109,8 +109,8 @@ namespace WarehouseManagement.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(InventoryCreateEditViewModel viewModel)
         {
-            if (ModelState.IsValid)
-            {
+            //if (ModelState.IsValid)
+            //{
                 // التحقق من عدم وجود سجل مكرر
                 var exists = await _context.InventoryRecords
                     .AnyAsync(i => i.MaterialId == viewModel.Record.MaterialId &&
@@ -144,7 +144,7 @@ namespace WarehouseManagement.Controllers
 
                 TempData["Success"] = "تم إضافة سجل الجرد بنجاح";
                 return RedirectToAction(nameof(Details), new { id = viewModel.Record.Id });
-            }
+            //}
 
             await LoadSelectLists(viewModel);
             return View(viewModel);

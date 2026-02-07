@@ -100,15 +100,15 @@ namespace WarehouseManagement.Controllers
                     $"الكمية المطلوبة غير متوفرة. المتوفر: {sourceStock?.Quantity ?? 0}");
             }
 
-            if (ModelState.IsValid)
-            {
+            //if (ModelState.IsValid)
+            //{
                 transfer.CreatedDate = DateTime.Now;
                 _context.Transfers.Add(transfer);
                 await _context.SaveChangesAsync();
 
                 TempData["Success"] = "تم إنشاء طلب النقل بنجاح. في انتظار التأكيد.";
                 return RedirectToAction(nameof(Details), new { id = transfer.Id });
-            }
+            //}
 
             await LoadSelectLists(transfer.MaterialId, transfer.FromLocationId);
             return View(transfer);

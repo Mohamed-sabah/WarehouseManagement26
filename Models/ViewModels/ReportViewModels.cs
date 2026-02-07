@@ -49,21 +49,18 @@ namespace WarehouseManagement.Models.ViewModels
         public decimal? MaxPriceFilter { get; set; }
         public string SortBy { get; set; } = "name";
 
-        // Statistics
         public int TotalItems => Items?.Count ?? 0;
         public decimal AveragePrice => Items?.Any() == true ? Items.Average(i => i.PurchasePrice) : 0;
         public decimal HighestPrice => Items?.Any() == true ? Items.Max(i => i.PurchasePrice) : 0;
         public decimal LowestPrice => Items?.Any() == true ? Items.Min(i => i.PurchasePrice) : 0;
 
-        public Material Material { get; internal set; }
-        public List<Purchase> Purchases { get; internal set; }
-        public int TotalQuantityPurchased { get; internal set; }
-        public decimal TotalAmountSpent { get; internal set; }
-        public decimal CurrentValue { get; internal set; }
-        public DateTime? FirstPurchaseDate { get; internal set; }
-        public DateTime? LastPurchaseDate { get; internal set; }
-       
-
+        public Material? Material { get; set; }
+        public List<Purchase>? Purchases { get; set; }
+        public int TotalQuantityPurchased { get; set; }
+        public decimal TotalAmountSpent { get; set; }
+        public decimal CurrentValue { get; set; }
+        public DateTime? FirstPurchaseDate { get; set; }
+        public DateTime? LastPurchaseDate { get; set; }
     }
 
     public class PricingReportItemViewModel
@@ -83,9 +80,6 @@ namespace WarehouseManagement.Models.ViewModels
 
     #region Low Stock Report
 
-    /// <summary>
-    /// تقرير المخزون المنخفض
-    /// </summary>
     public class LowStockReportViewModel
     {
         public string InstitutionName { get; set; } = string.Empty;
@@ -115,9 +109,6 @@ namespace WarehouseManagement.Models.ViewModels
 
     #region Expiry Report
 
-    /// <summary>
-    /// تقرير انتهاء الصلاحية
-    /// </summary>
     public class ExpiryReportViewModel
     {
         public string InstitutionName { get; set; } = string.Empty;
@@ -125,8 +116,7 @@ namespace WarehouseManagement.Models.ViewModels
         public int? CategoryId { get; set; }
         public int? LocationId { get; set; }
         public List<ExpiryReportItemViewModel> Items { get; set; } = new();
-        
-        // Statistics
+
         public int TotalItems => Items?.Count ?? 0;
         public int ExpiredCount => Items?.Count(i => i.DaysRemaining <= 0) ?? 0;
         public int ExpiringThisMonthCount => Items?.Count(i => i.DaysRemaining > 0 && i.DaysRemaining <= 30) ?? 0;
@@ -153,9 +143,6 @@ namespace WarehouseManagement.Models.ViewModels
 
     #region Purchases Yearly Report
 
-    /// <summary>
-    /// التقرير السنوي للمشتريات
-    /// </summary>
     public class PurchasesYearlyReportViewModel
     {
         public int Year { get; set; }
@@ -192,53 +179,8 @@ namespace WarehouseManagement.Models.ViewModels
 
     #endregion
 
-    #region Inventory Form 2 Report
-
-    /// <summary>
-    /// نموذج رقم (2) - الجرد السنوي
-    /// </summary>
-    public class InventoryForm2ViewModel
-    {
-        public int Year { get; set; }
-        public DateTime InventoryDate { get; set; } = DateTime.Now;
-        public string FormNumber { get; set; } = string.Empty;
-        public string InstitutionName { get; set; } = string.Empty;
-        public string WarehouseName { get; set; } = string.Empty;
-        public string WarehouseKeeper { get; set; } = string.Empty;
-        public string CommitteeHead { get; set; } = string.Empty;
-        public string? CommitteeNotes { get; set; }
-        public string? DirectorDecision { get; set; }
-        public int? CategoryId { get; set; }
-        public int? LocationId { get; set; }
-        public List<InventoryForm2ItemViewModel> Items { get; set; } = new();
-
-        // Statistics
-        public int TotalItems => Items?.Count ?? 0;
-        public decimal TotalQuantity => Items?.Sum(i => i.ActualQuantity) ?? 0;
-        public decimal TotalValue => Items?.Sum(i => i.ActualValue) ?? 0;
-    }
-
-    public class InventoryForm2ItemViewModel
-    {
-        public string MaterialCode { get; set; } = string.Empty;
-        public string MaterialName { get; set; } = string.Empty;
-        public string Unit { get; set; } = string.Empty;
-        public decimal BookQuantity { get; set; }
-        public decimal BookValue { get; set; }
-        public decimal ActualQuantity { get; set; }
-        public decimal ActualValue { get; set; }
-        public decimal Variance => ActualQuantity - BookQuantity;
-        public decimal VarianceValue => ActualValue - BookValue;
-        public string? Notes { get; set; }
-    }
-
-    #endregion
-
     #region Consumption Form 5 Report
 
-    /// <summary>
-    /// نموذج رقم (5) - سجل الاستهلاك
-    /// </summary>
     public class ConsumptionForm5ViewModel
     {
         public int Year { get; set; } = DateTime.Now.Year;
@@ -252,7 +194,6 @@ namespace WarehouseManagement.Models.ViewModels
         public string WarehouseKeeper { get; set; } = string.Empty;
         public List<ConsumptionForm5ItemViewModel> Items { get; set; } = new();
 
-        // Statistics
         public int TotalTransactions => Items?.Count ?? 0;
         public int TotalItems => Items?.Select(i => i.MaterialCode).Distinct().Count() ?? 0;
         public decimal TotalQuantity => Items?.Sum(i => i.Quantity) ?? 0;
@@ -279,15 +220,11 @@ namespace WarehouseManagement.Models.ViewModels
 
     #region Locations Summary Report
 
-    /// <summary>
-    /// تقرير ملخص المواقع
-    /// </summary>
     public class LocationsSummaryReportViewModel
     {
         public string InstitutionName { get; set; } = string.Empty;
         public List<LocationSummaryItemViewModel> Locations { get; set; } = new();
-        
-        // Statistics
+
         public int TotalLocations => Locations?.Count ?? 0;
         public int TotalMaterials => Locations?.Sum(l => l.MaterialsCount) ?? 0;
         public decimal TotalValue => Locations?.Sum(l => l.TotalValue) ?? 0;
@@ -315,21 +252,18 @@ namespace WarehouseManagement.Models.ViewModels
         public decimal Value { get; set; }
     }
 
-    /// <summary>
-    /// تقرير موقع واحد - للاستخدام في LocationReport
-    /// </summary>
     public class LocationReportViewModel
     {
         public string InstitutionName { get; set; } = string.Empty;
         public Location? Location { get; set; }
         public List<MaterialStock> Stocks { get; set; } = new();
         public List<LocationSummaryItemViewModel> Locations { get; set; } = new();
-        
+
         // Statistics for single location
         public int TotalItems { get; set; }
         public decimal TotalQuantity { get; set; }
         public decimal TotalValue { get; set; }
-        
+
         // Statistics for all locations summary
         public int TotalLocations => Locations?.Count ?? 0;
         public int TotalMaterials => Locations?.Sum(l => l.MaterialsCount) ?? 0;

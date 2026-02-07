@@ -1,207 +1,145 @@
 @model WarehouseManagement.Models.ViewModels.LocationReportViewModel
 @{
     ViewData["Title"] = "تقرير المواقع";
-    ViewData["Subtitle"] = "ملخص المخزون حسب الموقع";
 }
 
-<div class="page-header d-flex justify-content-between align-items-center mb-4 no-print">
-    <div>
-        <h1><i class="fas fa-warehouse me-2"></i>تقرير المواقع</h1>
-        <small class="text-muted">ملخص المخزون في جميع المواقع</small>
-    </div>
-    <div>
-        <a asp-action="Index" class="btn btn-secondary">
-            <i class="fas fa-arrow-right me-1"></i>العودة
-        </a>
-        <button onclick="window.print()" class="btn btn-info">
-            <i class="fas fa-print me-1"></i>طباعة
-        </button>
-        <a asp-action="ExportLocationReport" class="btn btn-success">
-            <i class="fas fa-file-excel me-1"></i>تصدير Excel
-        </a>
-    </div>
-</div>
-
-<!-- Print Header -->
-<div class="print-header text-center mb-4" style="display: none;">
-    <h4>@(Model.InstitutionName)</h4>
-    <h3>تقرير المخزون حسب الموقع</h3>
-    <p>بتاريخ @DateTime.Now.ToString("yyyy/MM/dd")</p>
-</div>
-
-@if (Model.Locations != null && Model.Locations.Any())
-{
-    <!-- Statistics Cards -->
+<div class="container-fluid" dir="rtl">
     <div class="row mb-4">
-        <div class="col-md-3">
-            <div class="card bg-primary text-white text-center p-3">
-                <h3 class="mb-0">@Model.Locations.Count</h3>
-                <small>عدد المواقع</small>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card bg-success text-white text-center p-3">
-                <h3 class="mb-0">@Model.Locations.Sum(l => l.MaterialsCount)</h3>
-                <small>إجمالي المواد</small>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card bg-info text-white text-center p-3">
-                <h3 class="mb-0">@Model.Locations.Sum(l => l.TotalQuantity).ToString("N0")</h3>
-                <small>إجمالي الكميات</small>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card bg-warning text-white text-center p-3">
-                <h3 class="mb-0">@Model.Locations.Sum(l => l.TotalValue).ToString("N0")</h3>
-                <small>القيمة الإجمالية (د.ع)</small>
-            </div>
-        </div>
-    </div>
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="bi bi-geo-alt me-2"></i>
+                        تقرير المواقع والمخازن
+                    </h5>
+                    <button class="btn btn-light btn-sm" onclick="window.print()">
+                        <i class="bi bi-printer me-1"></i> طباعة
+                    </button>
+                </div>
+                <div class="card-body">
+                    <!-- إحصائيات عامة -->
+                    <div class="row mb-4">
+                        <div class="col-md-3">
+                            <div class="card bg-info text-white">
+                                <div class="card-body text-center">
+                                    <h3>@Model.TotalLocations</h3>
+                                    <p class="mb-0">إجمالي المواقع</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-success text-white">
+                                <div class="card-body text-center">
+                                    <h3>@Model.TotalMaterials</h3>
+                                    <p class="mb-0">إجمالي المواد</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-warning text-dark">
+                                <div class="card-body text-center">
+                                    <h3>@Model.GrandTotalValue.ToString("N0")</h3>
+                                    <p class="mb-0">إجمالي القيمة (د.ع)</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-danger text-white">
+                                <div class="card-body text-center">
+                                    <h3>@Model.TotalLowStock</h3>
+                                    <p class="mb-0">مواد منخفضة</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
-    <!-- Locations Summary Table -->
-    <div class="card mb-4">
-        <div class="card-header bg-dark text-white">
-            <i class="fas fa-table me-2"></i>ملخص المواقع
-        </div>
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-bordered table-hover mb-0">
-                    <thead class="table-dark">
-                        <tr>
-                            <th class="text-center">ت</th>
-                            <th>الموقع</th>
-                            <th>الرمز</th>
-                            <th>المسؤول</th>
-                            <th class="text-center">عدد المواد</th>
-                            <th class="text-center">إجمالي الكمية</th>
-                            <th class="text-center">القيمة الإجمالية</th>
-                            <th class="text-center">المخزون المنخفض</th>
-                            <th class="text-center">نسبة القيمة</th>
-                            <th class="text-center no-print">الإجراءات</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @{
-                            int index = 1;
-                            var totalValue = Model.Locations.Sum(l => l.TotalValue);
-                        }
-                        @foreach (var loc in Model.Locations.OrderByDescending(l => l.TotalValue))
+                    <!-- قائمة المواقع -->
+                    <div class="row">
+                        @if (Model.Locations != null && Model.Locations.Any())
                         {
-                            var percentage = totalValue > 0 ? (loc.TotalValue / totalValue * 100) : 0;
-                            <tr>
-                                <td class="text-center">@(index++)</td>
-                                <td>
-                                    <strong>@loc.LocationName</strong>
-                                    @if (!loc.IsActive)
-                                    {
-                                        <span class="badge bg-secondary ms-1">غير نشط</span>
-                                    }
-                                </td>
-                                <td><code>@loc.LocationCode</code></td>
-                                <td>@(loc.ManagerName ?? "-")</td>
-                                <td class="text-center">@loc.MaterialsCount</td>
-                                <td class="text-center">@loc.TotalQuantity.ToString("N0")</td>
-                                <td class="text-end">@loc.TotalValue.ToString("N0")</td>
-                                <td class="text-center">
-                                    @if (loc.LowStockCount > 0)
-                                    {
-                                        <span class="badge bg-warning">@loc.LowStockCount</span>
-                                    }
-                                    else
-                                    {
-                                        <span class="badge bg-success">0</span>
-                                    }
-                                </td>
-                                <td>
-                                    <div class="progress" style="height: 20px;">
-                                        <div class="progress-bar bg-info" style="width: @percentage%">
-                                            @percentage.ToString("F1")%
+                            foreach (var location in Model.Locations)
+                            {
+                                <div class="col-lg-6 mb-4">
+                                    <div class="card h-100 border-primary">
+                                        <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <h6 class="mb-0">
+                                                    <i class="bi bi-building me-1"></i>
+                                                    @location.LocationName
+                                                </h6>
+                                                <small class="text-muted">@location.LocationCode</small>
+                                            </div>
+                                            <a href="@Url.Action("LocationReport", new { id = location.LocationId })" 
+                                               class="btn btn-sm btn-outline-primary">
+                                                <i class="bi bi-eye"></i> تفاصيل
+                                            </a>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="row text-center">
+                                                <div class="col-4">
+                                                    <div class="border-end">
+                                                        <h5 class="text-primary mb-0">@location.MaterialsCount</h5>
+                                                        <small class="text-muted">مادة</small>
+                                                    </div>
+                                                </div>
+                                                <div class="col-4">
+                                                    <div class="border-end">
+                                                        <h5 class="text-success mb-0">@location.TotalQuantity.ToString("N0")</h5>
+                                                        <small class="text-muted">كمية</small>
+                                                    </div>
+                                                </div>
+                                                <div class="col-4">
+                                                    <h5 class="text-warning mb-0">@location.TotalValue.ToString("N0")</h5>
+                                                    <small class="text-muted">قيمة</small>
+                                                </div>
+                                            </div>
+
+                                            @if (location.LowStockCount > 0)
+                                            {
+                                                <div class="alert alert-warning mt-3 mb-0 py-2">
+                                                    <small>
+                                                        <i class="bi bi-exclamation-triangle me-1"></i>
+                                                        @location.LowStockCount مواد بمخزون منخفض
+                                                    </small>
+                                                </div>
+                                            }
+
+                                            @if (!string.IsNullOrEmpty(location.ManagerName))
+                                            {
+                                                <div class="mt-3">
+                                                    <small class="text-muted">
+                                                        <i class="bi bi-person me-1"></i>
+                                                        المسؤول: @location.ManagerName
+                                                    </small>
+                                                </div>
+                                            }
                                         </div>
                                     </div>
-                                </td>
-                                <td class="text-center no-print">
-                                    <div class="btn-group btn-group-sm">
-                                        <a asp-controller="Locations" asp-action="Details" asp-route-id="@loc.LocationId" 
-                                           class="btn btn-outline-primary" title="التفاصيل">
-                                            <i class="fas fa-eye"></i>
-                                        </a>
-                                        <a asp-controller="Stock" asp-action="ByLocation" asp-route-id="@loc.LocationId" 
-                                           class="btn btn-outline-info" title="المخزون">
-                                            <i class="fas fa-boxes"></i>
-                                        </a>
-                                    </div>
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                    <tfoot class="table-secondary fw-bold">
-                        <tr>
-                            <td colspan="4" class="text-start">المجموع الكلي</td>
-                            <td class="text-center">@Model.Locations.Sum(l => l.MaterialsCount)</td>
-                            <td class="text-center">@Model.Locations.Sum(l => l.TotalQuantity).ToString("N0")</td>
-                            <td class="text-end">@totalValue.ToString("N0")</td>
-                            <td class="text-center">@Model.Locations.Sum(l => l.LowStockCount)</td>
-                            <td class="text-center">100%</td>
-                            <td class="no-print"></td>
-                        </tr>
-                    </tfoot>
-                </table>
-            </div>
-        </div>
-    </div>
-
-    <!-- Location Details Expandable Sections -->
-    @foreach (var loc in Model.Locations.Where(l => l.TopMaterials?.Any() == true))
-    {
-        <div class="card mb-3">
-            <div class="card-header" data-bs-toggle="collapse" data-bs-target="#loc-@loc.LocationId" 
-                 style="cursor: pointer;">
-                <i class="fas fa-chevron-down me-2"></i>
-                <strong>@loc.LocationName</strong> - أعلى المواد قيمة
-            </div>
-            <div class="collapse" id="loc-@loc.LocationId">
-                <div class="card-body p-0">
-                    <table class="table table-sm mb-0">
-                        <thead class="table-light">
-                            <tr>
-                                <th>المادة</th>
-                                <th class="text-center">الكمية</th>
-                                <th class="text-center">القيمة</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var mat in loc.TopMaterials!.Take(5))
-                            {
-                                <tr>
-                                    <td>@mat.MaterialName</td>
-                                    <td class="text-center">@mat.Quantity</td>
-                                    <td class="text-end">@mat.Value.ToString("N0")</td>
-                                </tr>
+                                </div>
                             }
-                        </tbody>
-                    </table>
+                        }
+                        else
+                        {
+                            <div class="col-12">
+                                <div class="alert alert-info text-center">
+                                    <i class="bi bi-info-circle me-2"></i>
+                                    لا توجد مواقع لعرضها
+                                </div>
+                            </div>
+                        }
+                    </div>
                 </div>
             </div>
         </div>
-    }
-}
-else
-{
-    <div class="alert alert-info text-center">
-        <i class="fas fa-info-circle me-2"></i>
-        لا توجد مواقع مسجلة في النظام
     </div>
-}
+</div>
 
 @section Styles {
     <style>
         @@media print {
-            .no-print { display: none !important; }
-            .print-header { display: block !important; }
-            .card { border: 1px solid #000 !important; }
-            .collapse { display: block !important; }
-            body { font-size: 12px; }
+            .btn {
+                display: none !important;
+            }
         }
     </style>
 }

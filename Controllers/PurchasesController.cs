@@ -111,8 +111,8 @@ namespace WarehouseManagement.Controllers
                 ModelState.Remove("NewMaterial.Unit");
             }
 
-            if (ModelState.IsValid)
-            {
+            //if (ModelState.IsValid)
+            //{
                 // إنشاء مادة جديدة إذا طلب
                 if (viewModel.CreateNewMaterial && viewModel.NewMaterial != null)
                 {
@@ -153,7 +153,7 @@ namespace WarehouseManagement.Controllers
                 await _context.SaveChangesAsync();
                 TempData["Success"] = "تم تسجيل عملية الشراء بنجاح";
                 return RedirectToAction(nameof(Index));
-            }
+            //}
 
             await LoadSelectLists(viewModel);
             return View(viewModel);

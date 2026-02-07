@@ -101,6 +101,91 @@ namespace WarehouseManagement.Controllers
             return View(stock);
         }
 
+        // GET: Stock/Create - إضافة هذا الـ action المفقود
+        public async Task<IActionResult> Create()
+        {
+            var viewModel = new StockCreateEditViewModel
+            {
+                Stock = new MaterialStock
+                {
+                    Condition = "جيدة",
+                    Quantity = 0
+                },
+                Materials = await _context.Materials.Where(m => m.IsActive).OrderBy(m => m.Name).ToListAsync(),
+                Locations = await _context.Locations.Where(l => l.IsActive).OrderBy(l => l.Name).ToListAsync()
+            };
+
+            return View(viewModel);
+        }
+
+        // POST: Stock/Create
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Create(StockCreateEditViewModel viewModel)
+        {
+            //if (ModelState.IsValid)
+            //{
+                // التحقق من عدم وجود سجل مسبق
+                var existingStock = await _context.MaterialStocks
+                    .FirstOrDefaultAsync(s => s.MaterialId == viewModel.Stock.MaterialId && 
+                                             s.LocationId == viewModel.Stock.LocationId);
+
+                if (existingStock != null)
+                {
+                    ModelState.AddModelError("", "يوجد سجل مخزون لهذه المادة في هذا الموقع");
+                    viewModel.Materials = await _context.Materials.Where(m => m.IsActive).OrderBy(m => m.Name).ToListAsync();
+                    viewModel.Locations = await _context.Locations.Where(l => l.IsActive).OrderBy(l => l.Name).ToListAsync();
+                    return View(viewModel);
+                }
+
+                viewModel.Stock.CreatedDate = DateTime.Now;
+                viewModel.Stock.LastUpdated = DateTime.Now;
+
+                _context.MaterialStocks.Add(viewModel.Stock);
+                await _context.SaveChangesAsync();
+
+                TempData["Success"] = "تم إضافة سجل المخزون بنجاح";
+                return RedirectToAction(nameof(Details), new { id = viewModel.Stock.Id });
+            //}
+
+            viewModel.Materials = await _context.Materials.Where(m => m.IsActive).OrderBy(m => m.Name).ToListAsync();
+            viewModel.Locations = await _context.Locations.Where(l => l.IsActive).OrderBy(l => l.Name).ToListAsync();
+            return View(viewModel);
+        }
+
+        // POST: Stock/CreateAjax (AJAX) - الاحتفاظ بالنسخة القديمة للتوافق
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CreateAjax(int materialId, int locationId, int quantity, 
+            DateTime? expiryDate, string? batchNumber, string? condition, string? exactLocation)
+        {
+            var existingStock = await _context.MaterialStocks
+                .FirstOrDefaultAsync(s => s.MaterialId == materialId && s.LocationId == locationId);
+
+            if (existingStock != null)
+            {
+                return Json(new { success = false, message = "يوجد سجل مخزون لهذه المادة في هذا الموقع" });
+            }
+
+            var stock = new MaterialStock
+            {
+                MaterialId = materialId,
+                LocationId = locationId,
+                Quantity = quantity,
+                ExpiryDate = expiryDate,
+                BatchNumber = batchNumber,
+                Condition = condition ?? "جيدة",
+                ExactLocation = exactLocation,
+                CreatedDate = DateTime.Now,
+                LastUpdated = DateTime.Now
+            };
+
+            _context.MaterialStocks.Add(stock);
+            await _context.SaveChangesAsync();
+
+            return Json(new { success = true, stockId = stock.Id });
+        }
+
         // GET: Stock/Adjust/5
         public async Task<IActionResult> Adjust(int? id)
         {
@@ -227,38 +312,59 @@ namespace WarehouseManagement.Controllers
             return View(stocks);
         }
 
-        // POST: Stock/Create (AJAX)
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(int materialId, int locationId, int quantity, 
-            DateTime? expiryDate, string? batchNumber, string? condition, string? exactLocation)
+        // GET: Stock/LocationReport - إضافة تقرير الموقع
+        public async Task<IActionResult> LocationReport(int? id)
         {
-            // التحقق من عدم وجود سجل مسبق
-            var existingStock = await _context.MaterialStocks
-                .FirstOrDefaultAsync(s => s.MaterialId == materialId && s.LocationId == locationId);
-
-            if (existingStock != null)
+            if (id == null)
             {
-                return Json(new { success = false, message = "يوجد سجل مخزون لهذه المادة في هذا الموقع" });
+                // عرض قائمة المواقع للاختيار
+                var locations = await _context.Locations
+                    .Include(l => l.Stocks)
+                        .ThenInclude(s => s.Material)
+                    .Where(l => l.IsActive)
+                    .ToListAsync();
+
+                var viewModel = new LocationReportViewModel
+                {
+                    Locations = locations.Select(l => new LocationSummaryItemViewModel
+                    {
+                        LocationId = l.Id,
+                        LocationName = l.Name,
+                        LocationCode = l.Code,
+                        ManagerName = l.ResponsiblePerson,
+                        MaterialsCount = l.Stocks.Count(s => s.Quantity > 0),
+                        TotalQuantity = l.Stocks.Sum(s => s.Quantity),
+                        TotalValue = l.Stocks.Sum(s => s.CurrentValue),
+                        LowStockCount = l.Stocks.Count(s => s.Quantity <= s.Material.MinimumStock),
+                        IsActive = l.IsActive
+                    }).ToList()
+                };
+
+                return View(viewModel);
             }
 
-            var stock = new MaterialStock
+            // عرض تفاصيل موقع محدد
+            var location = await _context.Locations
+                .Include(l => l.Stocks)
+                    .ThenInclude(s => s.Material)
+                        .ThenInclude(m => m.Category)
+                .Include(l => l.Stocks)
+                    .ThenInclude(s => s.Material)
+                        .ThenInclude(m => m.Purchases)
+                .FirstOrDefaultAsync(l => l.Id == id);
+
+            if (location == null) return NotFound();
+
+            var detailViewModel = new LocationReportViewModel
             {
-                MaterialId = materialId,
-                LocationId = locationId,
-                Quantity = quantity,
-                ExpiryDate = expiryDate,
-                BatchNumber = batchNumber,
-                Condition = condition ?? "جيدة",
-                ExactLocation = exactLocation,
-                CreatedDate = DateTime.Now,
-                LastUpdated = DateTime.Now
+                Location = location,
+                Stocks = location.Stocks.Where(s => s.Quantity > 0).ToList(),
+                TotalItems = location.Stocks.Count(s => s.Quantity > 0),
+                TotalQuantity = location.Stocks.Sum(s => s.Quantity),
+                TotalValue = location.Stocks.Sum(s => s.CurrentValue)
             };
 
-            _context.MaterialStocks.Add(stock);
-            await _context.SaveChangesAsync();
-
-            return Json(new { success = true, stockId = stock.Id });
+            return View("LocationReportDetail", detailViewModel);
         }
     }
 }

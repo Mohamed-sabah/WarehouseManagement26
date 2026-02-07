@@ -124,8 +124,8 @@ namespace WarehouseManagement.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(ConsumptionCreateEditViewModel viewModel)
         {
-            if (ModelState.IsValid)
-            {
+            //if (ModelState.IsValid)
+            //{
                 var inventory = await _context.InventoryRecords
                     .Include(i => i.Material)
                         .ThenInclude(m => m.Purchases)
@@ -162,7 +162,7 @@ namespace WarehouseManagement.Controllers
 
                 TempData["Success"] = "تم إضافة سجل الاستهلاك بنجاح";
                 return RedirectToAction(nameof(Details), new { id = viewModel.Record.Id });
-            }
+            //}
 
             viewModel.AvailableInventoryRecords = await GetAvailableInventoryRecords();
             return View(viewModel);
