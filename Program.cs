@@ -16,7 +16,7 @@ builder.Services.AddDbContext<WarehouseContext>(options =>
 builder.Services.AddScoped<IStockService, StockService>();
 builder.Services.AddScoped<IReportService, ReportService>();
 builder.Services.AddScoped<IDataMigrationService, DataMigrationService>();
-
+builder.Services.AddScoped<IExcelExportService, ExcelExportService>();
 // Add Memory Cache
 builder.Services.AddMemoryCache();
 

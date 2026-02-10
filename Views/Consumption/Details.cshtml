@@ -1,0 +1,255 @@
+@model WarehouseManagement.Models.ConsumptionRecord
+@{
+    ViewData["Title"] = "تفاصيل سجل الاستهلاك";
+}
+
+<div class="container-fluid" dir="rtl">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-action="Index">سجلات الاستهلاك</a></li>
+            <li class="breadcrumb-item active">تفاصيل السجل #@Model.Id</li>
+        </ol>
+    </nav>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="bi bi-file-earmark-text me-2"></i>
+                        تفاصيل سجل الاستهلاك
+                    </h5>
+                    <span class="badge @(Model.IsDisposed ? "bg-success" : "bg-warning")">
+                        @(Model.IsDisposed ? "تم التصرف" : "قيد الانتظار")
+                    </span>
+                </div>
+                <div class="card-body">
+                    <!-- معلومات المادة -->
+                    <h6 class="border-bottom pb-2 mb-3">
+                        <i class="bi bi-box-seam me-1"></i> معلومات المادة
+                    </h6>
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <dl class="row mb-0">
+                                <dt class="col-sm-4">اسم المادة:</dt>
+                                <dd class="col-sm-8">
+                                    <a asp-controller="Materials" asp-action="Details" asp-route-id="@Model.InventoryRecord?.MaterialId">
+                                        @Model.InventoryRecord?.Material?.Name
+                                    </a>
+                                </dd>
+                                <dt class="col-sm-4">رمز المادة:</dt>
+                                <dd class="col-sm-8">@Model.InventoryRecord?.Material?.Code</dd>
+                                <dt class="col-sm-4">الفئة:</dt>
+                                <dd class="col-sm-8">@(Model.InventoryRecord?.Material?.Category?.Name ?? "-")</dd>
+                            </dl>
+                        </div>
+                        <div class="col-md-6">
+                            <dl class="row mb-0">
+                                <dt class="col-sm-4">الموقع:</dt>
+                                <dd class="col-sm-8">@Model.InventoryRecord?.Location?.Name</dd>
+                                <dt class="col-sm-4">القسم:</dt>
+                                <dd class="col-sm-8">@(Model.InventoryRecord?.Department ?? "-")</dd>
+                                <dt class="col-sm-4">سنة الجرد:</dt>
+                                <dd class="col-sm-8">@Model.InventoryRecord?.Year</dd>
+                            </dl>
+                        </div>
+                    </div>
+
+                    <!-- معلومات الاستهلاك -->
+                    <h6 class="border-bottom pb-2 mb-3">
+                        <i class="bi bi-clipboard-data me-1"></i> معلومات الاستهلاك
+                    </h6>
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <dl class="row mb-0">
+                                <dt class="col-sm-5">الكمية المستهلكة:</dt>
+                                <dd class="col-sm-7">
+                                    <span class="badge bg-danger fs-6">@Model.ConsumedQuantity</span>
+                                    @Model.InventoryRecord?.Material?.Unit
+                                </dd>
+                                <dt class="col-sm-5">تاريخ التقرير:</dt>
+                                <dd class="col-sm-7">@Model.ReportDate.ToString("yyyy/MM/dd")</dd>
+                                <dt class="col-sm-5">نسبة الضرر:</dt>
+                                <dd class="col-sm-7">@(Model.DamagePercentage?.ToString("N1") ?? "0")%</dd>
+                            </dl>
+                        </div>
+                        <div class="col-md-6">
+                            <dl class="row mb-0">
+                                <dt class="col-sm-5">سعر الوحدة:</dt>
+                                <dd class="col-sm-7">@Model.OriginalUnitPrice.ToString("N0") د.ع</dd>
+                                <dt class="col-sm-5">القيمة الأصلية:</dt>
+                                <dd class="col-sm-7">@Model.StoredOriginalValue.ToString("N0") د.ع</dd>
+                                <dt class="col-sm-5">القيمة المتبقية:</dt>
+                                <dd class="col-sm-7">@Model.StoredResidualValue.ToString("N0") د.ع</dd>
+                            </dl>
+                        </div>
+                    </div>
+
+                    <!-- سبب الاستهلاك وقرار اللجنة -->
+                    <h6 class="border-bottom pb-2 mb-3">
+                        <i class="bi bi-info-circle me-1"></i> السبب والقرار
+                    </h6>
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <dl class="row mb-0">
+                                <dt class="col-sm-5">سبب الاستهلاك:</dt>
+                                <dd class="col-sm-7">
+                                    @switch (Model.Reason)
+                                    {
+                                        case WarehouseManagement.Models.ConsumptionReason.NormalUse:
+                                            <span class="badge bg-info">الاستعمال الاعتيادي</span>
+                                            break;
+                                        case WarehouseManagement.Models.ConsumptionReason.Obsolescence:
+                                            <span class="badge bg-secondary">القدم</span>
+                                            break;
+                                        case WarehouseManagement.Models.ConsumptionReason.TechnicalFailure:
+                                            <span class="badge bg-warning">عطل فني</span>
+                                            break;
+                                        case WarehouseManagement.Models.ConsumptionReason.Accident:
+                                            <span class="badge bg-danger">حادث</span>
+                                            break;
+                                        default:
+                                            <span class="badge bg-secondary">@Model.Reason</span>
+                                            break;
+                                    }
+                                </dd>
+                                <dt class="col-sm-5">تفاصيل السبب:</dt>
+                                <dd class="col-sm-7">@(Model.ReasonDetails ?? "-")</dd>
+                            </dl>
+                        </div>
+                        <div class="col-md-6">
+                            <dl class="row mb-0">
+                                <dt class="col-sm-5">قرار اللجنة:</dt>
+                                <dd class="col-sm-7">
+                                    @switch (Model.Decision)
+                                    {
+                                        case WarehouseManagement.Models.CommitteeDecision.Disposal:
+                                            <span class="badge bg-danger">إتلاف</span>
+                                            break;
+                                        case WarehouseManagement.Models.CommitteeDecision.Sell:
+                                            <span class="badge bg-success">بيع</span>
+                                            break;
+                                        case WarehouseManagement.Models.CommitteeDecision.Repair:
+                                            <span class="badge bg-primary">إصلاح</span>
+                                            break;
+                                        case WarehouseManagement.Models.CommitteeDecision.UnderReview:
+                                            <span class="badge bg-warning">قيد الدراسة</span>
+                                            break;
+                                        default:
+                                            <span class="badge bg-secondary">@Model.Decision</span>
+                                            break;
+                                    }
+                                </dd>
+                                <dt class="col-sm-5">تفاصيل القرار:</dt>
+                                <dd class="col-sm-7">@(Model.DecisionDetails ?? "-")</dd>
+                            </dl>
+                        </div>
+                    </div>
+
+                    @if (Model.IsDisposed)
+                    {
+                        <!-- معلومات التصرف -->
+                        <h6 class="border-bottom pb-2 mb-3">
+                            <i class="bi bi-check-circle me-1"></i> معلومات التصرف
+                        </h6>
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <dl class="row mb-0">
+                                    <dt class="col-sm-5">تاريخ التصرف:</dt>
+                                    <dd class="col-sm-7">@Model.DisposalDate?.ToString("yyyy/MM/dd")</dd>
+                                    <dt class="col-sm-5">رقم المحضر:</dt>
+                                    <dd class="col-sm-7">@(Model.DisposalRecordNumber ?? "-")</dd>
+                                </dl>
+                            </div>
+                            <div class="col-md-6">
+                                <dl class="row mb-0">
+                                    <dt class="col-sm-5">قيمة البيع:</dt>
+                                    <dd class="col-sm-7">@(Model.SaleValue?.ToString("N0") ?? "0") د.ع</dd>
+                                </dl>
+                            </div>
+                        </div>
+                    }
+
+                    @if (!string.IsNullOrEmpty(Model.Notes))
+                    {
+                        <h6 class="border-bottom pb-2 mb-3">
+                            <i class="bi bi-sticky me-1"></i> ملاحظات
+                        </h6>
+                        <div class="alert alert-light">
+                            @Model.Notes
+                        </div>
+                    }
+                </div>
+                <div class="card-footer">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning @(Model.IsDisposed ? "disabled" : "")">
+                                <i class="bi bi-pencil me-1"></i> تعديل
+                            </a>
+                            @if (!Model.IsDisposed)
+                            {
+                                <a asp-action="ProcessDecision" asp-route-id="@Model.Id" class="btn btn-success">
+                                    <i class="bi bi-check2-circle me-1"></i> تنفيذ القرار
+                                </a>
+                            }
+                        </div>
+                        <div>
+                            <a asp-action="Index" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-right me-1"></i> العودة للقائمة
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <!-- بطاقة الملخص -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-secondary text-white">
+                    <h6 class="mb-0"><i class="bi bi-calculator me-2"></i>ملخص مالي</h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>القيمة الأصلية:</span>
+                        <strong>@Model.StoredOriginalValue.ToString("N0") د.ع</strong>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>القيمة المتبقية:</span>
+                        <strong class="text-success">@Model.StoredResidualValue.ToString("N0") د.ع</strong>
+                    </div>
+                    <hr />
+                    <div class="d-flex justify-content-between">
+                        <span>قيمة الخسارة:</span>
+                        <strong class="text-danger">@((Model.StoredOriginalValue - Model.StoredResidualValue).ToString("N0")) د.ع</strong>
+                    </div>
+                </div>
+            </div>
+
+            <!-- روابط سريعة -->
+            <div class="card shadow-sm">
+                <div class="card-header bg-info text-white">
+                    <h6 class="mb-0"><i class="bi bi-link-45deg me-2"></i>روابط سريعة</h6>
+                </div>
+                <div class="list-group list-group-flush">
+                    <a asp-controller="Inventory" asp-action="Details" asp-route-id="@Model.InventoryRecordId" class="list-group-item list-group-item-action">
+                        <i class="bi bi-clipboard-check me-2"></i> سجل الجرد المرتبط
+                    </a>
+                    <a asp-controller="Materials" asp-action="Details" asp-route-id="@Model.InventoryRecord?.MaterialId" class="list-group-item list-group-item-action">
+                        <i class="bi bi-box-seam me-2"></i> تفاصيل المادة
+                    </a>
+                    <a asp-action="Report" asp-route-year="@Model.ReportDate.Year" class="list-group-item list-group-item-action">
+                        <i class="bi bi-file-earmark-text me-2"></i> تقرير الاستهلاك السنوي
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Styles {
+    <style>
+        dt { font-weight: 600; color: #555; }
+        dd { margin-bottom: 0.5rem; }
+    </style>
+}

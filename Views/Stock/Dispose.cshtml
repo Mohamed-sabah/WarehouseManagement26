@@ -1,0 +1,104 @@
+@model WarehouseManagement.Models.ViewModels.StockDisposeViewModel
+@{
+    ViewData["Title"] = "إتلاف / التخلص من المخزون";
+}
+
+<div class="container-fluid" dir="rtl">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-action="Index">المخزون</a></li>
+            <li class="breadcrumb-item"><a asp-action="Details" asp-route-id="@Model.StockId">تفاصيل المخزون</a></li>
+            <li class="breadcrumb-item active">إتلاف / التخلص</li>
+        </ol>
+    </nav>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-trash3 me-2"></i>
+                        إتلاف / التخلص من المخزون
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <!-- معلومات المادة -->
+                    <div class="alert alert-warning">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <strong><i class="bi bi-box-seam me-1"></i> المادة:</strong>
+                                @Model.MaterialName
+                            </div>
+                            <div class="col-md-3">
+                                <strong><i class="bi bi-geo-alt me-1"></i> الموقع:</strong>
+                                @Model.LocationName
+                            </div>
+                            <div class="col-md-3">
+                                <strong><i class="bi bi-stack me-1"></i> الكمية المتوفرة:</strong>
+                                <span class="badge bg-primary fs-6">@Model.CurrentQuantity</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <form asp-action="Dispose" method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" asp-for="StockId" />
+                        <input type="hidden" asp-for="MaterialName" />
+                        <input type="hidden" asp-for="LocationName" />
+                        <input type="hidden" asp-for="CurrentQuantity" />
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label asp-for="DisposeQuantity" class="form-label">الكمية المراد إتلافها <span class="text-danger">*</span></label>
+                                <input asp-for="DisposeQuantity" class="form-control" type="number" min="1" max="@Model.CurrentQuantity" required />
+                                <span asp-validation-for="DisposeQuantity" class="text-danger"></span>
+                                <small class="text-muted">الحد الأقصى: @Model.CurrentQuantity</small>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="DisposeReason" class="form-label">سبب الإتلاف <span class="text-danger">*</span></label>
+                                <select asp-for="DisposeReason" class="form-select" required>
+                                    <option value="">-- اختر السبب --</option>
+                                    <option value="Expired">انتهاء الصلاحية</option>
+                                    <option value="Damaged">تلف</option>
+                                    <option value="Obsolete">قدم / عدم الحاجة</option>
+                                    <option value="QualityIssue">مشاكل جودة</option>
+                                    <option value="InventoryAdjustment">تسوية جرد</option>
+                                    <option value="Other">أخرى</option>
+                                </select>
+                                <span asp-validation-for="DisposeReason" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Notes" class="form-label">ملاحظات</label>
+                            <textarea asp-for="Notes" class="form-control" rows="3" placeholder="أدخل أي ملاحظات إضافية..."></textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="AuthorizedBy" class="form-label">المخول بالإتلاف</label>
+                            <input asp-for="AuthorizedBy" class="form-control" placeholder="اسم الشخص المخول" />
+                        </div>
+
+                        <div class="alert alert-danger">
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                            <strong>تحذير:</strong> هذه العملية لا يمكن التراجع عنها. سيتم خصم الكمية المحددة من المخزون نهائياً.
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a asp-action="Details" asp-route-id="@Model.StockId" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-right me-1"></i> إلغاء
+                            </a>
+                            <button type="submit" class="btn btn-danger" onclick="return confirm('هل أنت متأكد من إتلاف هذه الكمية؟ لا يمكن التراجع عن هذه العملية.')">
+                                <i class="bi bi-trash3 me-1"></i> تأكيد الإتلاف
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

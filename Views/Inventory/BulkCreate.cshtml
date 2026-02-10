@@ -1,0 +1,228 @@
+@model WarehouseManagement.Models.ViewModels.BulkInventoryViewModel
+@{
+    ViewData["Title"] = "بدء جرد جماعي";
+    var locations = ViewBag.Locations as List<WarehouseManagement.Models.Location>;
+}
+
+<div class="container-fluid" dir="rtl">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-action="Index">سجلات الجرد</a></li>
+            <li class="breadcrumb-item active">جرد جماعي</li>
+        </ol>
+    </nav>
+
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">
+                <i class="bi bi-clipboard-check me-2"></i>
+                بدء عملية جرد جماعي
+            </h5>
+        </div>
+        <div class="card-body">
+            <form asp-action="BulkCreate" method="post" id="bulkInventoryForm">
+                @Html.AntiForgeryToken()
+
+                <!-- إعدادات الجرد -->
+                <div class="row mb-4">
+                    <div class="col-md-3">
+                        <label asp-for="Year" class="form-label">سنة الجرد <span class="text-danger">*</span></label>
+                        <input asp-for="Year" class="form-control" type="number" min="2020" max="2030" />
+                        <span asp-validation-for="Year" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-3">
+                        <label asp-for="InventoryDate" class="form-label">تاريخ الجرد <span class="text-danger">*</span></label>
+                        <input asp-for="InventoryDate" class="form-control" type="date" />
+                        <span asp-validation-for="InventoryDate" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-3">
+                        <label asp-for="LocationId" class="form-label">الموقع <span class="text-danger">*</span></label>
+                        <select asp-for="LocationId" class="form-select" id="locationSelect">
+                            <option value="">-- اختر الموقع --</option>
+                            @if (locations != null)
+                            {
+                                @foreach (var loc in locations)
+                                {
+                                    <option value="@loc.Id" selected="@(Model.LocationId == loc.Id)">@loc.Name</option>
+                                }
+                            }
+                        </select>
+                        <span asp-validation-for="LocationId" class="text-danger"></span>
+                    </div>
+                    <div class="col-md-3">
+                        <label asp-for="Department" class="form-label">القسم / الدائرة</label>
+                        <input asp-for="Department" class="form-control" placeholder="اسم القسم" />
+                    </div>
+                </div>
+
+                @if (!Model.LocationId.HasValue)
+                {
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle me-2"></i>
+                        اختر الموقع أولاً لعرض المواد المتوفرة للجرد.
+                    </div>
+                    
+                    <div class="text-center">
+                        <button type="button" class="btn btn-primary" id="loadMaterialsBtn">
+                            <i class="bi bi-arrow-repeat me-1"></i> تحميل المواد
+                        </button>
+                    </div>
+                }
+                else
+                {
+                    @if (Model.Items.Any())
+                    {
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="mb-0">
+                                <i class="bi bi-list-check me-1"></i>
+                                المواد المتوفرة للجرد (@Model.Items.Count مادة)
+                            </h6>
+                            <div>
+                                <button type="button" class="btn btn-sm btn-outline-primary" id="selectAllBtn">
+                                    <i class="bi bi-check-all me-1"></i> تحديد الكل
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" id="deselectAllBtn">
+                                    <i class="bi bi-x-lg me-1"></i> إلغاء التحديد
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-hover">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th width="50">اختيار</th>
+                                        <th>رمز المادة</th>
+                                        <th>اسم المادة</th>
+                                        <th>الكمية المسجلة</th>
+                                        <th width="120">الكمية الفعلية</th>
+                                        <th>الفرق</th>
+                                        <th width="120">الحالة</th>
+                                        <th>ملاحظات</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @for (int i = 0; i < Model.Items.Count; i++)
+                                    {
+                                        <tr class="inventory-row">
+                                            <td class="text-center">
+                                                <input type="checkbox" class="form-check-input item-checkbox"
+                                                       name="Items[@i].IsSelected" value="true" checked="@Model.Items[i].IsSelected" />
+                                                <input type="hidden" name="Items[@i].MaterialId" value="@Model.Items[i].MaterialId" />
+                                                <input type="hidden" name="Items[@i].MaterialName" value="@Model.Items[i].MaterialName" />
+                                                <input type="hidden" name="Items[@i].MaterialCode" value="@Model.Items[i].MaterialCode" />
+                                                <input type="hidden" name="Items[@i].RecordedQuantity" value="@Model.Items[i].RecordedQuantity" />
+                                            </td>
+                                            <td>@Model.Items[i].MaterialCode</td>
+                                            <td>@Model.Items[i].MaterialName</td>
+                                            <td class="text-center">
+                                                <span class="badge bg-secondary">@Model.Items[i].RecordedQuantity</span>
+                                            </td>
+                                            <td>
+                                                <input type="number" class="form-control form-control-sm actual-qty"
+                                                       name="Items[@i].ActualQuantity"
+                                                       value="@Model.Items[i].ActualQuantity"
+                                                       min="0" data-recorded="@Model.Items[i].RecordedQuantity" />
+                                            </td>
+                                            <td class="text-center difference-cell">
+                                                <span class="badge bg-success">0</span>
+                                            </td>
+                                            <td>
+                                                <select class="form-select form-select-sm" name="Items[@i].Condition">
+                                                    <option value="Good" selected="@(Model.Items[i].Condition == WarehouseManagement.Models.MaterialCondition.Good)">جيدة</option>
+                                                    <option value="Excellent" selected="@(Model.Items[i].Condition == WarehouseManagement.Models.MaterialCondition.Excellent)">ممتازة</option>
+                                                    <option value="Average" selected="@(Model.Items[i].Condition == WarehouseManagement.Models.MaterialCondition.Average)">متوسطة</option>
+                                                    <option value="Poor" selected="@(Model.Items[i].Condition == WarehouseManagement.Models.MaterialCondition.Poor)">ضعيفة</option>
+                                                    <option value="Damaged" selected="@(Model.Items[i].Condition == WarehouseManagement.Models.MaterialCondition.Damaged)">تالفة</option>
+                                                </select>
+                                            </td>
+                                            <td>
+                                                <input type="text" class="form-control form-control-sm"
+                                                       name="Items[@i].Notes" value="@Model.Items[i].Notes"
+                                                       placeholder="ملاحظات..." />
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="d-flex justify-content-between mt-4">
+                            <a asp-action="Index" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-right me-1"></i> إلغاء
+                            </a>
+                            <button type="submit" class="btn btn-success btn-lg">
+                                <i class="bi bi-save me-1"></i> حفظ سجلات الجرد
+                            </button>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-warning">
+                            <i class="bi bi-exclamation-triangle me-2"></i>
+                            لا توجد مواد في المخزون لهذا الموقع.
+                        </div>
+                    }
+                }
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        $(document).ready(function () {
+            // تحميل المواد عند اختيار الموقع
+            $('#loadMaterialsBtn').click(function () {
+                var locationId = $('#locationSelect').val();
+                if (locationId) {
+                    window.location.href = '@Url.Action("BulkCreate")' + '?locationId=' + locationId;
+                } else {
+                    alert('يرجى اختيار الموقع أولاً');
+                }
+            });
+
+            // تحديث الفرق عند تغيير الكمية الفعلية
+            $('.actual-qty').on('input', function () {
+                var recorded = parseInt($(this).data('recorded'));
+                var actual = parseInt($(this).val()) || 0;
+                var diff = actual - recorded;
+                var $diffCell = $(this).closest('tr').find('.difference-cell span');
+
+                $diffCell.text(diff);
+                if (diff < 0) {
+                    $diffCell.removeClass('bg-success bg-secondary').addClass('bg-danger');
+                } else if (diff > 0) {
+                    $diffCell.removeClass('bg-danger bg-secondary').addClass('bg-success');
+                } else {
+                    $diffCell.removeClass('bg-danger bg-success').addClass('bg-secondary');
+                }
+            });
+
+            // تشغيل الحساب الأولي
+            $('.actual-qty').trigger('input');
+
+            // تحديد الكل
+            $('#selectAllBtn').click(function () {
+                $('.item-checkbox').prop('checked', true);
+            });
+
+            // إلغاء تحديد الكل
+            $('#deselectAllBtn').click(function () {
+                $('.item-checkbox').prop('checked', false);
+            });
+        });
+    </script>
+}
+
+@section Styles {
+    <style>
+        .inventory-row:hover {
+            background-color: #f8f9fa;
+        }
+        .actual-qty {
+            width: 80px;
+        }
+    </style>
+}

@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using WarehouseManagement.Data;
 using WarehouseManagement.Models;
@@ -17,7 +16,7 @@ namespace WarehouseManagement.Controllers
         }
 
         // GET: Stock
-        public async Task<IActionResult> Index(int? locationId, int? categoryId, 
+        public async Task<IActionResult> Index(int? locationId, int? categoryId,
             string? searchTerm, bool lowStockOnly = false, bool expiringOnly = false)
         {
             var query = _context.MaterialStocks
@@ -82,8 +81,8 @@ namespace WarehouseManagement.Controllers
 
             ViewBag.TransfersIn = await _context.Transfers
                 .Include(t => t.FromLocation)
-                .Where(t => t.MaterialId == stock.MaterialId && 
-                           t.ToLocationId == stock.LocationId && 
+                .Where(t => t.MaterialId == stock.MaterialId &&
+                           t.ToLocationId == stock.LocationId &&
                            t.IsExecuted)
                 .OrderByDescending(t => t.TransferDate)
                 .Take(10)
@@ -91,8 +90,8 @@ namespace WarehouseManagement.Controllers
 
             ViewBag.TransfersOut = await _context.Transfers
                 .Include(t => t.ToLocation)
-                .Where(t => t.MaterialId == stock.MaterialId && 
-                           t.FromLocationId == stock.LocationId && 
+                .Where(t => t.MaterialId == stock.MaterialId &&
+                           t.FromLocationId == stock.LocationId &&
                            t.IsExecuted)
                 .OrderByDescending(t => t.TransferDate)
                 .Take(10)
@@ -101,7 +100,7 @@ namespace WarehouseManagement.Controllers
             return View(stock);
         }
 
-        // GET: Stock/Create - إضافة هذا الـ action المفقود
+        // GET: Stock/Create
         public async Task<IActionResult> Create()
         {
             var viewModel = new StockCreateEditViewModel
@@ -123,40 +122,32 @@ namespace WarehouseManagement.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(StockCreateEditViewModel viewModel)
         {
-            //if (ModelState.IsValid)
-            //{
-                // التحقق من عدم وجود سجل مسبق
-                var existingStock = await _context.MaterialStocks
-                    .FirstOrDefaultAsync(s => s.MaterialId == viewModel.Stock.MaterialId && 
-                                             s.LocationId == viewModel.Stock.LocationId);
+            var existingStock = await _context.MaterialStocks
+                .FirstOrDefaultAsync(s => s.MaterialId == viewModel.Stock.MaterialId &&
+                                         s.LocationId == viewModel.Stock.LocationId);
 
-                if (existingStock != null)
-                {
-                    ModelState.AddModelError("", "يوجد سجل مخزون لهذه المادة في هذا الموقع");
-                    viewModel.Materials = await _context.Materials.Where(m => m.IsActive).OrderBy(m => m.Name).ToListAsync();
-                    viewModel.Locations = await _context.Locations.Where(l => l.IsActive).OrderBy(l => l.Name).ToListAsync();
-                    return View(viewModel);
-                }
+            if (existingStock != null)
+            {
+                ModelState.AddModelError("", "يوجد سجل مخزون لهذه المادة في هذا الموقع");
+                viewModel.Materials = await _context.Materials.Where(m => m.IsActive).OrderBy(m => m.Name).ToListAsync();
+                viewModel.Locations = await _context.Locations.Where(l => l.IsActive).OrderBy(l => l.Name).ToListAsync();
+                return View(viewModel);
+            }
 
-                viewModel.Stock.CreatedDate = DateTime.Now;
-                viewModel.Stock.LastUpdated = DateTime.Now;
+            viewModel.Stock.CreatedDate = DateTime.Now;
+            viewModel.Stock.LastUpdated = DateTime.Now;
 
-                _context.MaterialStocks.Add(viewModel.Stock);
-                await _context.SaveChangesAsync();
+            _context.MaterialStocks.Add(viewModel.Stock);
+            await _context.SaveChangesAsync();
 
-                TempData["Success"] = "تم إضافة سجل المخزون بنجاح";
-                return RedirectToAction(nameof(Details), new { id = viewModel.Stock.Id });
-            //}
-
-            viewModel.Materials = await _context.Materials.Where(m => m.IsActive).OrderBy(m => m.Name).ToListAsync();
-            viewModel.Locations = await _context.Locations.Where(l => l.IsActive).OrderBy(l => l.Name).ToListAsync();
-            return View(viewModel);
+            TempData["Success"] = "تم إضافة سجل المخزون بنجاح";
+            return RedirectToAction(nameof(Details), new { id = viewModel.Stock.Id });
         }
 
-        // POST: Stock/CreateAjax (AJAX) - الاحتفاظ بالنسخة القديمة للتوافق
+        // POST: Stock/CreateAjax (AJAX)
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> CreateAjax(int materialId, int locationId, int quantity, 
+        public async Task<IActionResult> CreateAjax(int materialId, int locationId, int quantity,
             DateTime? expiryDate, string? batchNumber, string? condition, string? exactLocation)
         {
             var existingStock = await _context.MaterialStocks
@@ -247,6 +238,58 @@ namespace WarehouseManagement.Controllers
             return View(viewModel);
         }
 
+        // GET: Stock/Dispose/5 - صفحة الإتلاف
+        public async Task<IActionResult> Dispose(int? id)
+        {
+            if (id == null) return NotFound();
+
+            var stock = await _context.MaterialStocks
+                .Include(s => s.Material)
+                .Include(s => s.Location)
+                .FirstOrDefaultAsync(s => s.Id == id);
+
+            if (stock == null) return NotFound();
+
+            var viewModel = new StockDisposeViewModel
+            {
+                StockId = stock.Id,
+                MaterialName = stock.Material.Name,
+                LocationName = stock.Location.Name,
+                CurrentQuantity = stock.Quantity
+            };
+
+            return View(viewModel);
+        }
+
+        // POST: Stock/Dispose
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Dispose(StockDisposeViewModel viewModel)
+        {
+            if (ModelState.IsValid)
+            {
+                var stock = await _context.MaterialStocks.FindAsync(viewModel.StockId);
+                if (stock == null) return NotFound();
+
+                if (viewModel.DisposeQuantity > stock.Quantity)
+                {
+                    ModelState.AddModelError("DisposeQuantity", "الكمية المراد إتلافها أكبر من الكمية المتوفرة");
+                    return View(viewModel);
+                }
+
+                stock.Quantity -= viewModel.DisposeQuantity;
+                stock.LastUpdated = DateTime.Now;
+                stock.Notes = $"{stock.Notes}\n[{DateTime.Now:yyyy-MM-dd}] إتلاف: {viewModel.DisposeQuantity} - السبب: {viewModel.DisposeReason} - {viewModel.Notes}";
+
+                await _context.SaveChangesAsync();
+
+                TempData["Success"] = $"تم إتلاف {viewModel.DisposeQuantity} بنجاح";
+                return RedirectToAction(nameof(Details), new { id = viewModel.StockId });
+            }
+
+            return View(viewModel);
+        }
+
         // GET: Stock/LowStock
         public async Task<IActionResult> LowStock()
         {
@@ -273,7 +316,7 @@ namespace WarehouseManagement.Controllers
                 .Include(s => s.Material)
                     .ThenInclude(m => m.Category)
                 .Include(s => s.Location)
-                .Where(s => s.ExpiryDate.HasValue && 
+                .Where(s => s.ExpiryDate.HasValue &&
                            s.ExpiryDate <= expiryDate &&
                            s.Quantity > 0)
                 .OrderBy(s => s.ExpiryDate)
@@ -312,12 +355,11 @@ namespace WarehouseManagement.Controllers
             return View(stocks);
         }
 
-        // GET: Stock/LocationReport - إضافة تقرير الموقع
+        // GET: Stock/LocationReport
         public async Task<IActionResult> LocationReport(int? id)
         {
             if (id == null)
             {
-                // عرض قائمة المواقع للاختيار
                 var locations = await _context.Locations
                     .Include(l => l.Stocks)
                         .ThenInclude(s => s.Material)
@@ -343,7 +385,6 @@ namespace WarehouseManagement.Controllers
                 return View(viewModel);
             }
 
-            // عرض تفاصيل موقع محدد
             var location = await _context.Locations
                 .Include(l => l.Stocks)
                     .ThenInclude(s => s.Material)

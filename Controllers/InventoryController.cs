@@ -109,45 +109,31 @@ namespace WarehouseManagement.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(InventoryCreateEditViewModel viewModel)
         {
-            //if (ModelState.IsValid)
-            //{
-                // التحقق من عدم وجود سجل مكرر
-                var exists = await _context.InventoryRecords
-                    .AnyAsync(i => i.MaterialId == viewModel.Record.MaterialId &&
-                                  i.LocationId == viewModel.Record.LocationId &&
-                                  i.Year == viewModel.Record.Year);
+            var exists = await _context.InventoryRecords
+                .AnyAsync(i => i.MaterialId == viewModel.Record.MaterialId &&
+                              i.LocationId == viewModel.Record.LocationId &&
+                              i.Year == viewModel.Record.Year);
 
-                if (exists)
-                {
-                    ModelState.AddModelError("", "يوجد سجل جرد لهذه المادة في هذا الموقع لنفس السنة");
-                    await LoadSelectLists(viewModel);
-                    return View(viewModel);
-                }
+            if (exists)
+            {
+                ModelState.AddModelError("", "يوجد سجل جرد لهذه المادة في هذا الموقع لنفس السنة");
+                await LoadSelectLists(viewModel);
+                return View(viewModel);
+            }
 
-                // جلب الكمية المسجلة من المخزون
-                var stock = await _context.MaterialStocks
-                    .FirstOrDefaultAsync(s => s.MaterialId == viewModel.Record.MaterialId &&
-                                             s.LocationId == viewModel.Record.LocationId);
+            var stock = await _context.MaterialStocks
+                .FirstOrDefaultAsync(s => s.MaterialId == viewModel.Record.MaterialId &&
+                                         s.LocationId == viewModel.Record.LocationId);
 
-                viewModel.Record.RecordedQuantity = stock?.Quantity ?? 0;
-                viewModel.Record.CreatedDate = DateTime.Now;
+            viewModel.Record.RecordedQuantity = stock?.Quantity ?? 0;
+            viewModel.Record.CreatedDate = DateTime.Now;
+            viewModel.Record.StoredDifference = viewModel.Record.Difference;
 
-                // حساب السعر
-                var material = await _context.Materials
-                    .Include(m => m.Purchases)
-                    .FirstOrDefaultAsync(m => m.Id == viewModel.Record.MaterialId);
+            _context.InventoryRecords.Add(viewModel.Record);
+            await _context.SaveChangesAsync();
 
-                viewModel.Record.StoredDifference = viewModel.Record.Difference;
-
-                _context.InventoryRecords.Add(viewModel.Record);
-                await _context.SaveChangesAsync();
-
-                TempData["Success"] = "تم إضافة سجل الجرد بنجاح";
-                return RedirectToAction(nameof(Details), new { id = viewModel.Record.Id });
-            //}
-
-            await LoadSelectLists(viewModel);
-            return View(viewModel);
+            TempData["Success"] = "تم إضافة سجل الجرد بنجاح";
+            return RedirectToAction(nameof(Details), new { id = viewModel.Record.Id });
         }
 
         // GET: Inventory/Edit/5
@@ -196,6 +182,17 @@ namespace WarehouseManagement.Controllers
             return View(viewModel);
         }
 
+        // GET: Inventory/StartBulkInventory - الصفحة المفقودة
+        public async Task<IActionResult> StartBulkInventory()
+        {
+            ViewBag.Locations = await _context.Locations.Where(l => l.IsActive).OrderBy(l => l.Name).ToListAsync();
+            return View("BulkCreate", new BulkInventoryViewModel
+            {
+                Year = DateTime.Now.Year,
+                InventoryDate = DateTime.Now
+            });
+        }
+
         // GET: Inventory/BulkCreate
         public async Task<IActionResult> BulkCreate(int? locationId)
         {
@@ -242,7 +239,7 @@ namespace WarehouseManagement.Controllers
                 return View(viewModel);
             }
 
-            var location = await _context.Locations.FindAsync(viewModel.LocationId);
+            int addedCount = 0;
 
             foreach (var item in viewModel.Items.Where(i => i.IsSelected))
             {
@@ -252,10 +249,6 @@ namespace WarehouseManagement.Controllers
                                   i.Year == viewModel.Year);
 
                 if (exists) continue;
-
-                var material = await _context.Materials
-                    .Include(m => m.Purchases)
-                    .FirstOrDefaultAsync(m => m.Id == item.MaterialId);
 
                 var record = new InventoryRecord
                 {
@@ -273,10 +266,11 @@ namespace WarehouseManagement.Controllers
                 };
 
                 _context.InventoryRecords.Add(record);
+                addedCount++;
             }
 
             await _context.SaveChangesAsync();
-            TempData["Success"] = "تم إنشاء سجلات الجرد بنجاح";
+            TempData["Success"] = $"تم إنشاء {addedCount} سجل جرد بنجاح";
             return RedirectToAction(nameof(Index), new { year = viewModel.Year, locationId = viewModel.LocationId });
         }
 
