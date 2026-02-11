@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WarehouseManagement.Data;
@@ -5,6 +6,7 @@ using WarehouseManagement.Models;
 
 namespace WarehouseManagement.Controllers
 {
+    [Authorize]
     public class LocationsController : Controller
     {
         private readonly WarehouseContext _context;

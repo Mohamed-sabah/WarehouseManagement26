@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
@@ -7,6 +8,7 @@ using WarehouseManagement.Models.ViewModels;
 
 namespace WarehouseManagement.Controllers
 {
+    [Authorize]
     public class PurchasesController : Controller
     {
         private readonly WarehouseContext _context;

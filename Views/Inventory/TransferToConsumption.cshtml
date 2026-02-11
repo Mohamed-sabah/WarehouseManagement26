@@ -1,0 +1,266 @@
+@model WarehouseManagement.Models.ViewModels.TransferToConsumptionViewModel
+@{
+    ViewData["Title"] = "تحويل للاستهلاك";
+}
+
+<div class="container-fluid" dir="rtl">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/"><i class="bi bi-house"></i> الرئيسية</a></li>
+            <li class="breadcrumb-item"><a href="/Inventory">سجلات الجرد</a></li>
+            <li class="breadcrumb-item"><a href="/Inventory/Details/@Model.InventoryRecordId">سجل #@Model.InventoryRecordId</a></li>
+            <li class="breadcrumb-item active">تحويل للاستهلاك</li>
+        </ol>
+    </nav>
+
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1">
+                <i class="bi bi-arrow-left-right text-info"></i>
+                تحويل سجل جرد للاستهلاك
+            </h2>
+            <p class="text-muted mb-0">نموذج رقم (5) - بيان بالمواد المستهلكة</p>
+        </div>
+        <a asp-action="Details" asp-route-id="@Model.InventoryRecordId" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-right"></i> العودة للسجل
+        </a>
+    </div>
+
+    <div class="row">
+        <!-- معلومات السجل الأصلي -->
+        <div class="col-lg-4">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-info-circle"></i> معلومات سجل الجرد</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-borderless mb-0">
+                        <tr>
+                            <th class="text-muted">المادة:</th>
+                            <td><strong>@Model.InventoryRecord?.Material?.Name</strong></td>
+                        </tr>
+                        <tr>
+                            <th class="text-muted">الكود:</th>
+                            <td><code>@Model.InventoryRecord?.Material?.Code</code></td>
+                        </tr>
+                        <tr>
+                            <th class="text-muted">التصنيف:</th>
+                            <td>@(Model.InventoryRecord?.Material?.Category?.Name ?? "-")</td>
+                        </tr>
+                        <tr>
+                            <th class="text-muted">الموقع:</th>
+                            <td>@Model.InventoryRecord?.Location?.Name</td>
+                        </tr>
+                        <tr>
+                            <th class="text-muted">سنة الجرد:</th>
+                            <td><span class="badge bg-primary">@Model.InventoryRecord?.Year</span></td>
+                        </tr>
+                        <tr>
+                            <th class="text-muted">الكمية الفعلية:</th>
+                            <td>
+                                <strong class="text-success">@Model.InventoryRecord?.ActualQuantity.ToString("N0")</strong>
+                                @Model.InventoryRecord?.Material?.Unit
+                            </td>
+                        </tr>
+                        <tr>
+                            <th class="text-muted">سعر الوحدة:</th>
+                            <td>@Model.InventoryRecord?.Material?.AveragePrice.ToString("N0") د.ع</td>
+                        </tr>
+                        <tr>
+                            <th class="text-muted">الحالة:</th>
+                            <td>
+                                <span class="badge @(Model.InventoryRecord?.Condition == "جيدة" ? "bg-success" : "bg-warning")">
+                                    @Model.InventoryRecord?.Condition
+                                </span>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+
+            <!-- تنبيه -->
+            <div class="alert alert-info">
+                <h6 class="alert-heading"><i class="bi bi-info-circle"></i> ملاحظة</h6>
+                <p class="mb-0 small">
+                    سيتم إنشاء سجل استهلاك جديد مرتبط بسجل الجرد هذا. 
+                    سجل الاستهلاك يُستخدم لتوثيق المواد التالفة أو المنتهية الصلاحية 
+                    وفقاً لنموذج رقم (5) الحكومي.
+                </p>
+            </div>
+        </div>
+
+        <!-- نموذج التحويل -->
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="bi bi-file-earmark-plus"></i> بيانات سجل الاستهلاك</h5>
+                </div>
+                <div class="card-body">
+                    <form asp-action="TransferToConsumption" method="post">
+                        <input type="hidden" asp-for="InventoryRecordId" />
+                        
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+                        <div class="row">
+                            <!-- الكمية المستهلكة -->
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="ConsumedQuantity" class="form-label">
+                                    <i class="bi bi-boxes"></i> الكمية المستهلكة <span class="text-danger">*</span>
+                                </label>
+                                <div class="input-group">
+                                    <input asp-for="ConsumedQuantity" class="form-control" type="number" min="1" 
+                                           max="@Model.InventoryRecord?.ActualQuantity" required />
+                                    <span class="input-group-text">@Model.InventoryRecord?.Material?.Unit</span>
+                                </div>
+                                <span asp-validation-for="ConsumedQuantity" class="text-danger"></span>
+                                <small class="text-muted">الحد الأقصى: @Model.InventoryRecord?.ActualQuantity</small>
+                            </div>
+
+                            <!-- نسبة التلف -->
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="DamagePercentage" class="form-label">
+                                    <i class="bi bi-percent"></i> نسبة التلف
+                                </label>
+                                <div class="input-group">
+                                    <input asp-for="DamagePercentage" class="form-control" type="number" 
+                                           min="0" max="100" step="1" value="100" />
+                                    <span class="input-group-text">%</span>
+                                </div>
+                                <span asp-validation-for="DamagePercentage" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <!-- سبب الاستهلاك -->
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Reason" class="form-label">
+                                    <i class="bi bi-question-circle"></i> سبب الاستهلاك <span class="text-danger">*</span>
+                                </label>
+                                <select asp-for="Reason" class="form-select" required>
+                                    <option value="">-- اختر السبب --</option>
+                                    <option value="NormalUse">استخدام عادي</option>
+                                    <option value="Obsolescence">انتهاء الصلاحية</option>
+                                    <option value="TechnicalFailure">عطل فني</option>
+                                    <option value="Accident">حادث / تلف</option>
+                                    <option value="EndOfLife">انتهاء العمر الافتراضي</option>
+                                    <option value="Other">أخرى</option>
+                                </select>
+                                <span asp-validation-for="Reason" class="text-danger"></span>
+                            </div>
+
+                            <!-- قرار اللجنة -->
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Decision" class="form-label">
+                                    <i class="bi bi-clipboard-check"></i> قرار اللجنة <span class="text-danger">*</span>
+                                </label>
+                                <select asp-for="Decision" class="form-select" required>
+                                    <option value="">-- اختر القرار --</option>
+                                    <option value="Dispose">إتلاف</option>
+                                    <option value="Sell">بيع</option>
+                                    <option value="Repair">إصلاح</option>
+                                    <option value="UnderReview">قيد المراجعة</option>
+                                </select>
+                                <span asp-validation-for="Decision" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <!-- تفاصيل السبب -->
+                        <div class="mb-3">
+                            <label asp-for="ReasonDetails" class="form-label">
+                                <i class="bi bi-text-paragraph"></i> تفاصيل السبب
+                            </label>
+                            <textarea asp-for="ReasonDetails" class="form-control" rows="2" 
+                                      placeholder="أدخل تفاصيل إضافية عن سبب الاستهلاك..."></textarea>
+                            <span asp-validation-for="ReasonDetails" class="text-danger"></span>
+                        </div>
+
+                        <!-- تفاصيل القرار -->
+                        <div class="mb-3">
+                            <label asp-for="DecisionDetails" class="form-label">
+                                <i class="bi bi-text-paragraph"></i> تفاصيل القرار
+                            </label>
+                            <textarea asp-for="DecisionDetails" class="form-control" rows="2" 
+                                      placeholder="أدخل تفاصيل قرار اللجنة..."></textarea>
+                            <span asp-validation-for="DecisionDetails" class="text-danger"></span>
+                        </div>
+
+                        <!-- القيمة المتبقية -->
+                        <div class="mb-3">
+                            <label asp-for="ResidualValue" class="form-label">
+                                <i class="bi bi-currency-dollar"></i> القيمة المتبقية (إن وجدت)
+                            </label>
+                            <div class="input-group">
+                                <input asp-for="ResidualValue" class="form-control" type="number" 
+                                       min="0" step="1000" value="0" />
+                                <span class="input-group-text">د.ع</span>
+                            </div>
+                            <span asp-validation-for="ResidualValue" class="text-danger"></span>
+                            <small class="text-muted">القيمة التقديرية للمادة بعد التلف (للبيع أو الخردة)</small>
+                        </div>
+
+                        <hr />
+
+                        <!-- ملخص مالي -->
+                        <div class="card bg-light mb-3">
+                            <div class="card-body">
+                                <h6 class="card-title"><i class="bi bi-calculator"></i> الملخص المالي التقديري</h6>
+                                <div class="row text-center">
+                                    <div class="col-md-4">
+                                        <p class="text-muted mb-1">القيمة الأصلية</p>
+                                        <h5 class="text-primary" id="originalValue">0 د.ع</h5>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <p class="text-muted mb-1">القيمة المتبقية</p>
+                                        <h5 class="text-success" id="residualValueDisplay">0 د.ع</h5>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <p class="text-muted mb-1">الخسارة</p>
+                                        <h5 class="text-danger" id="lossValue">0 د.ع</h5>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- أزرار الإرسال -->
+                        <div class="d-flex justify-content-between">
+                            <a asp-action="Details" asp-route-id="@Model.InventoryRecordId" class="btn btn-outline-secondary">
+                                <i class="bi bi-x-circle"></i> إلغاء
+                            </a>
+                            <button type="submit" class="btn btn-info btn-lg">
+                                <i class="bi bi-check-circle"></i> إنشاء سجل الاستهلاك
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        // حساب القيم المالية
+        const unitPrice = @(Model.InventoryRecord?.Material?.AveragePrice ?? 0);
+        
+        function calculateValues() {
+            const quantity = parseInt(document.getElementById('ConsumedQuantity').value) || 0;
+            const residual = parseInt(document.getElementById('ResidualValue').value) || 0;
+            
+            const originalValue = quantity * unitPrice;
+            const loss = originalValue - residual;
+            
+            document.getElementById('originalValue').textContent = originalValue.toLocaleString('ar-IQ') + ' د.ع';
+            document.getElementById('residualValueDisplay').textContent = residual.toLocaleString('ar-IQ') + ' د.ع';
+            document.getElementById('lossValue').textContent = loss.toLocaleString('ar-IQ') + ' د.ع';
+        }
+        
+        document.getElementById('ConsumedQuantity').addEventListener('input', calculateValues);
+        document.getElementById('ResidualValue').addEventListener('input', calculateValues);
+        
+        // حساب أولي
+        calculateValues();
+    </script>
+}

@@ -1,0 +1,232 @@
+@model WarehouseManagement.Models.ViewModels.InventoryCreateEditViewModel
+@{
+    ViewData["Title"] = "تعديل سجل الجرد";
+}
+
+<div class="container-fluid" dir="rtl">
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/"><i class="bi bi-house"></i> الرئيسية</a></li>
+            <li class="breadcrumb-item"><a href="/Inventory">سجلات الجرد</a></li>
+            <li class="breadcrumb-item active">تعديل سجل #@Model.Record.Id</li>
+        </ol>
+    </nav>
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-pencil-square text-warning"></i> تعديل سجل الجرد #@Model.Record.Id</h2>
+        <a asp-action="Details" asp-route-id="@Model.Record.Id" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-right"></i> العودة
+        </a>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-warning">
+                    <h5 class="mb-0"><i class="bi bi-pencil"></i> تعديل بيانات الجرد</h5>
+                </div>
+                <div class="card-body">
+                    <form asp-action="Edit" method="post">
+                        <input type="hidden" asp-for="Record.Id" />
+                        <input type="hidden" asp-for="Record.CreatedDate" />
+                        
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Record.MaterialId" class="form-label">
+                                    المادة <span class="text-danger">*</span>
+                                </label>
+                                <select asp-for="Record.MaterialId" class="form-select" disabled>
+                                    <option value="">-- اختر المادة --</option>
+                                    @if (Model.Materials != null)
+                                    {
+                                        foreach (var material in Model.Materials)
+                                        {
+                                            <option value="@material.Id" selected="@(Model.Record.MaterialId == material.Id)">
+                                                @material.Code - @material.Name
+                                            </option>
+                                        }
+                                    }
+                                </select>
+                                <input type="hidden" asp-for="Record.MaterialId" />
+                                <small class="text-muted">لا يمكن تغيير المادة بعد الإنشاء</small>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Record.LocationId" class="form-label">
+                                    الموقع <span class="text-danger">*</span>
+                                </label>
+                                <select asp-for="Record.LocationId" class="form-select" disabled>
+                                    <option value="">-- اختر الموقع --</option>
+                                    @if (Model.Locations != null)
+                                    {
+                                        foreach (var location in Model.Locations)
+                                        {
+                                            <option value="@location.Id" selected="@(Model.Record.LocationId == location.Id)">
+                                                @location.Name
+                                            </option>
+                                        }
+                                    }
+                                </select>
+                                <input type="hidden" asp-for="Record.LocationId" />
+                                <small class="text-muted">لا يمكن تغيير الموقع بعد الإنشاء</small>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label asp-for="Record.Year" class="form-label">
+                                    سنة الجرد <span class="text-danger">*</span>
+                                </label>
+                                <input asp-for="Record.Year" class="form-control" type="number" readonly />
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+                                <label asp-for="Record.InventoryDate" class="form-label">
+                                    تاريخ الجرد <span class="text-danger">*</span>
+                                </label>
+                                <input asp-for="Record.InventoryDate" class="form-control" type="date" />
+                                <span asp-validation-for="Record.InventoryDate" class="text-danger"></span>
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+                                <label asp-for="Record.Department" class="form-label">القسم</label>
+                                <input asp-for="Record.Department" class="form-control" />
+                            </div>
+                        </div>
+
+                        <hr />
+                        <h6 class="text-primary mb-3"><i class="bi bi-calculator"></i> الكميات</h6>
+
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label asp-for="Record.RecordedQuantity" class="form-label">
+                                    الكمية الدفترية
+                                </label>
+                                <input asp-for="Record.RecordedQuantity" class="form-control" type="number" readonly />
+                                <small class="text-muted">من سجلات المخزون</small>
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+                                <label asp-for="Record.ActualQuantity" class="form-label">
+                                    الكمية الفعلية <span class="text-danger">*</span>
+                                </label>
+                                <input asp-for="Record.ActualQuantity" class="form-control" type="number" min="0" id="actualQuantity" />
+                                <span asp-validation-for="Record.ActualQuantity" class="text-danger"></span>
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">الفرق</label>
+                                <input type="text" class="form-control" id="differenceDisplay" readonly />
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Record.Condition" class="form-label">حالة المادة</label>
+                                <select asp-for="Record.Condition" class="form-select">
+                                    <option value="جيدة">جيدة</option>
+                                    <option value="متوسطة">متوسطة</option>
+                                    <option value="سيئة">سيئة</option>
+                                    <option value="تالفة">تالفة</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Record.Notes" class="form-label">ملاحظات</label>
+                            <textarea asp-for="Record.Notes" class="form-control" rows="3" 
+                                      placeholder="أي ملاحظات إضافية عن سجل الجرد..."></textarea>
+                        </div>
+
+                        <hr />
+
+                        <div class="d-flex justify-content-between">
+                            <a asp-action="Details" asp-route-id="@Model.Record.Id" class="btn btn-outline-secondary">
+                                <i class="bi bi-x-circle"></i> إلغاء
+                            </a>
+                            <button type="submit" class="btn btn-warning btn-lg">
+                                <i class="bi bi-check-circle"></i> حفظ التعديلات
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <!-- ملخص الفروقات -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-info-circle"></i> ملخص الفروقات</h5>
+                </div>
+                <div class="card-body text-center" id="summaryCard">
+                    <div class="mb-3">
+                        <i class="bi bi-check-circle text-secondary" style="font-size: 3rem;" id="statusIcon"></i>
+                    </div>
+                    <h5 id="statusText">مطابق</h5>
+                    <p class="text-muted mb-0" id="statusDescription">الكمية الفعلية تطابق الكمية الدفترية</p>
+                </div>
+            </div>
+
+            <!-- تحذيرات -->
+            <div class="alert alert-info">
+                <h6 class="alert-heading"><i class="bi bi-info-circle"></i> ملاحظة</h6>
+                <ul class="mb-0 small">
+                    <li>لا يمكن تغيير المادة أو الموقع بعد إنشاء السجل</li>
+                    <li>الفرق يُحسب تلقائياً من الكمية الفعلية - الكمية الدفترية</li>
+                    <li>يمكنك تحويل السجل للاستهلاك من صفحة التفاصيل</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        const recordedQty = @Model.Record.RecordedQuantity;
+        
+        function updateDifference() {
+            const actualQty = parseInt(document.getElementById('actualQuantity').value) || 0;
+            const diff = actualQty - recordedQty;
+            
+            const diffDisplay = document.getElementById('differenceDisplay');
+            const statusIcon = document.getElementById('statusIcon');
+            const statusText = document.getElementById('statusText');
+            const statusDescription = document.getElementById('statusDescription');
+            
+            diffDisplay.value = (diff > 0 ? '+' : '') + diff;
+            
+            if (diff < 0) {
+                diffDisplay.classList.remove('text-success', 'text-secondary');
+                diffDisplay.classList.add('text-danger');
+                statusIcon.className = 'bi bi-exclamation-triangle text-danger';
+                statusIcon.style.fontSize = '3rem';
+                statusText.textContent = 'عجز';
+                statusText.className = 'text-danger';
+                statusDescription.textContent = 'يوجد نقص بمقدار ' + Math.abs(diff) + ' وحدة';
+            } else if (diff > 0) {
+                diffDisplay.classList.remove('text-danger', 'text-secondary');
+                diffDisplay.classList.add('text-success');
+                statusIcon.className = 'bi bi-plus-circle text-success';
+                statusIcon.style.fontSize = '3rem';
+                statusText.textContent = 'فائض';
+                statusText.className = 'text-success';
+                statusDescription.textContent = 'يوجد زيادة بمقدار ' + diff + ' وحدة';
+            } else {
+                diffDisplay.classList.remove('text-danger', 'text-success');
+                diffDisplay.classList.add('text-secondary');
+                statusIcon.className = 'bi bi-check-circle text-success';
+                statusIcon.style.fontSize = '3rem';
+                statusText.textContent = 'مطابق';
+                statusText.className = 'text-success';
+                statusDescription.textContent = 'الكمية الفعلية تطابق الكمية الدفترية';
+            }
+        }
+        
+        document.getElementById('actualQuantity').addEventListener('input', updateDifference);
+        updateDifference();
+    </script>
+}

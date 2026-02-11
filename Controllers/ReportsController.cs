@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WarehouseManagement.Data;
@@ -7,6 +8,7 @@ using WarehouseManagement.Services;
 
 namespace WarehouseManagement.Controllers
 {
+    [Authorize]
     public class ReportsController : Controller
     {
         private readonly WarehouseContext _context;

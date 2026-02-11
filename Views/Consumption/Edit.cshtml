@@ -1,0 +1,158 @@
+@model WarehouseManagement.Models.ConsumptionRecord
+@{
+    ViewData["Title"] = "تعديل سجل الاستهلاك";
+}
+
+<div class="container-fluid" dir="rtl">
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/"><i class="bi bi-house"></i> الرئيسية</a></li>
+            <li class="breadcrumb-item"><a href="/Consumption">سجلات الاستهلاك</a></li>
+            <li class="breadcrumb-item active">تعديل سجل #@Model.Id</li>
+        </ol>
+    </nav>
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-pencil-square text-warning"></i> تعديل سجل الاستهلاك #@Model.Id</h2>
+        <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-right"></i> العودة
+        </a>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-warning">
+                    <h5 class="mb-0"><i class="bi bi-pencil"></i> تعديل البيانات</h5>
+                </div>
+                <div class="card-body">
+                    <form asp-action="Edit" method="post">
+                        <input type="hidden" asp-for="Id" />
+                        <input type="hidden" asp-for="InventoryRecordId" />
+                        <input type="hidden" asp-for="CreatedDate" />
+                        
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="ConsumedQuantity" class="form-label">
+                                    الكمية المستهلكة <span class="text-danger">*</span>
+                                </label>
+                                <input asp-for="ConsumedQuantity" class="form-control" type="number" min="1" />
+                                <span asp-validation-for="ConsumedQuantity" class="text-danger"></span>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="DamagePercentage" class="form-label">نسبة التلف (%)</label>
+                                <input asp-for="DamagePercentage" class="form-control" type="number" min="0" max="100" />
+                                <span asp-validation-for="DamagePercentage" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Reason" class="form-label">سبب الاستهلاك <span class="text-danger">*</span></label>
+                                <select asp-for="Reason" class="form-select">
+                                    <option value="NormalUse">استخدام عادي</option>
+                                    <option value="Obsolescence">انتهاء الصلاحية</option>
+                                    <option value="TechnicalFailure">عطل فني</option>
+                                    <option value="Accident">حادث / تلف</option>
+                                    <option value="EndOfLife">انتهاء العمر الافتراضي</option>
+                                    <option value="Other">أخرى</option>
+                                </select>
+                                <span asp-validation-for="Reason" class="text-danger"></span>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Decision" class="form-label">قرار اللجنة <span class="text-danger">*</span></label>
+                                <select asp-for="Decision" class="form-select">
+                                    <option value="Dispose">إتلاف</option>
+                                    <option value="Sell">بيع</option>
+                                    <option value="Repair">إصلاح</option>
+                                    <option value="UnderReview">قيد المراجعة</option>
+                                </select>
+                                <span asp-validation-for="Decision" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="ReasonDescription" class="form-label">تفاصيل السبب</label>
+                            <textarea asp-for="ReasonDescription" class="form-control" rows="2"></textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="DecisionNotes" class="form-label">ملاحظات القرار</label>
+                            <textarea asp-for="DecisionNotes" class="form-control" rows="2"></textarea>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="OriginalUnitPrice" class="form-label">سعر الوحدة الأصلي</label>
+                                <div class="input-group">
+                                    <input asp-for="OriginalUnitPrice" class="form-control" type="number" step="0.01" />
+                                    <span class="input-group-text">د.ع</span>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="StoredResidualValue" class="form-label">القيمة المتبقية</label>
+                                <div class="input-group">
+                                    <input asp-for="StoredResidualValue" class="form-control" type="number" step="0.01" />
+                                    <span class="input-group-text">د.ع</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Notes" class="form-label">ملاحظات إضافية</label>
+                            <textarea asp-for="Notes" class="form-control" rows="3"></textarea>
+                        </div>
+
+                        <hr />
+
+                        <div class="d-flex justify-content-between">
+                            <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-outline-secondary">
+                                <i class="bi bi-x-circle"></i> إلغاء
+                            </a>
+                            <button type="submit" class="btn btn-warning btn-lg">
+                                <i class="bi bi-check-circle"></i> حفظ التعديلات
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="bi bi-info-circle"></i> معلومات السجل</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-borderless mb-0">
+                        <tr>
+                            <th class="text-muted">المادة:</th>
+                            <td>@Model.InventoryRecord?.Material?.Name</td>
+                        </tr>
+                        <tr>
+                            <th class="text-muted">الكود:</th>
+                            <td><code>@Model.InventoryRecord?.Material?.Code</code></td>
+                        </tr>
+                        <tr>
+                            <th class="text-muted">الموقع:</th>
+                            <td>@Model.InventoryRecord?.Location?.Name</td>
+                        </tr>
+                        <tr>
+                            <th class="text-muted">تاريخ الإنشاء:</th>
+                            <td>@Model.CreatedDate.ToString("yyyy/MM/dd")</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

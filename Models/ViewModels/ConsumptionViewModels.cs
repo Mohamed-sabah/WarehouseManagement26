@@ -130,6 +130,7 @@ namespace WarehouseManagement.Models.ViewModels
         public string OrganizationName { get; set; } = string.Empty;
         public string PreparedBy { get; set; } = string.Empty;
         public string CommitteeMembers { get; set; } = string.Empty;
+
     }
 
     public class ConsumptionReportItemViewModel

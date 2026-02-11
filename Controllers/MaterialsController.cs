@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
@@ -10,6 +11,7 @@ namespace WarehouseManagement.Controllers
     /// <summary>
     /// Controller للمواد - نقطة الإدخال الوحيدة للمواد
     /// </summary>
+  [Authorize]
     public class MaterialsController : Controller
     {
         private readonly WarehouseContext _context;

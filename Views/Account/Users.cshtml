@@ -1,0 +1,98 @@
+@model List<AppUser>
+@{
+    ViewData["Title"] = "إدارة المستخدمين";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="mb-0"><i class="fas fa-users me-2"></i> إدارة المستخدمين</h4>
+    <a asp-action="Register" class="btn btn-primary">
+        <i class="fas fa-user-plus me-1"></i> إضافة مستخدم
+    </a>
+</div>
+
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>اسم المستخدم</th>
+                        <th>الاسم الكامل</th>
+                        <th>الدور</th>
+                        <th>القسم</th>
+                        <th>آخر دخول</th>
+                        <th>الحالة</th>
+                        <th>إجراءات</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var user in Model)
+                    {
+                        <tr>
+                            <td>@user.Id</td>
+                            <td><strong>@user.Username</strong></td>
+                            <td>@user.FullName</td>
+                            <td>
+                                @switch (user.Role)
+                                {
+                                    case UserRole.Admin:
+                                        <span class="badge bg-danger">مدير النظام</span>
+                                        break;
+                                    case UserRole.StoreKeeper:
+                                        <span class="badge bg-primary">أمين المخزن</span>
+                                        break;
+                                    case UserRole.Accountant:
+                                        <span class="badge bg-info">محاسب</span>
+                                        break;
+                                    default:
+                                        <span class="badge bg-secondary">مشاهد</span>
+                                        break;
+                                }
+                            </td>
+                            <td>@(user.Department ?? "-")</td>
+                            <td>
+                                @if (user.LastLoginDate.HasValue)
+                                {
+                                    <small class="text-muted">@user.LastLoginDate.Value.ToString("yyyy/MM/dd HH:mm")</small>
+                                }
+                                else
+                                {
+                                    <small class="text-muted">لم يسجل دخول</small>
+                                }
+                            </td>
+                            <td>
+                                @if (user.IsActive)
+                                {
+                                    <span class="badge bg-success">نشط</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary">معطل</span>
+                                }
+                            </td>
+                            <td>
+                                <form asp-action="ToggleUser" asp-route-id="@user.Id" method="post" style="display:inline">
+                                    @Html.AntiForgeryToken()
+                                    @if (user.IsActive)
+                                    {
+                                        <button type="submit" class="btn btn-sm btn-outline-warning" title="تعطيل"
+                                                onclick="return confirm('هل تريد تعطيل هذا المستخدم؟')">
+                                            <i class="fas fa-ban"></i>
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        <button type="submit" class="btn btn-sm btn-outline-success" title="تفعيل">
+                                            <i class="fas fa-check"></i>
+                                        </button>
+                                    }
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

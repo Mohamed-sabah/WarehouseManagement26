@@ -1,0 +1,419 @@
+@model LoginViewModel
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>تسجيل الدخول - نظام إدارة المخازن</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Cairo', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Animated background particles */
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 50%;
+            animation: float linear infinite;
+        }
+
+        @@keyframes float {
+            0% {
+                transform: translateY(100vh) rotate(0deg);
+                opacity: 0;
+            }
+            10% {
+                opacity: 1;
+            }
+            90% {
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-10vh) rotate(720deg);
+                opacity: 0;
+            }
+        }
+
+        .login-container {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            max-width: 460px;
+            padding: 15px;
+        }
+
+        .login-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.3);
+            padding: 50px 40px;
+            animation: slideUp 0.6s ease-out;
+        }
+
+        @@keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 35px;
+        }
+
+        .login-icon {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            font-size: 2rem;
+            color: white;
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+            animation: pulse 2s infinite;
+        }
+
+        @@keyframes pulse {
+            0%, 100% {
+                box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+            }
+            50% {
+                box-shadow: 0 10px 40px rgba(102, 126, 234, 0.6);
+            }
+        }
+
+        .login-header h2 {
+            font-weight: 800;
+            color: #1a1a2e;
+            font-size: 1.6rem;
+            margin-bottom: 5px;
+        }
+
+        .login-header p {
+            color: #6c757d;
+            font-size: 0.95rem;
+        }
+
+        .form-floating {
+            margin-bottom: 20px;
+        }
+
+        .form-floating .form-control {
+            border: 2px solid #e8e8e8;
+            border-radius: 14px;
+            padding: 16px 50px 16px 16px;
+            height: 58px;
+            font-size: 1rem;
+            background: #fafafa;
+            transition: all 0.3s ease;
+        }
+
+        .form-floating .form-control:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.15);
+            background: white;
+        }
+
+        .form-floating label {
+            padding: 16px 50px 16px 16px;
+            color: #999;
+        }
+
+        .input-icon {
+            position: absolute;
+            right: 18px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #aaa;
+            font-size: 1.1rem;
+            z-index: 5;
+            transition: color 0.3s;
+        }
+
+        .form-floating .form-control:focus ~ .input-icon {
+            color: #667eea;
+        }
+
+        .password-toggle {
+            position: absolute;
+            left: 18px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            color: #aaa;
+            font-size: 1.1rem;
+            z-index: 5;
+            border: none;
+            background: none;
+            padding: 0;
+        }
+
+        .password-toggle:hover {
+            color: #667eea;
+        }
+
+        .form-check {
+            margin-bottom: 25px;
+        }
+
+        .form-check-input:checked {
+            background-color: #667eea;
+            border-color: #667eea;
+        }
+
+        .btn-login {
+            width: 100%;
+            height: 55px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 14px;
+            color: white;
+            font-size: 1.1rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+            color: white;
+        }
+
+        .btn-login:active {
+            transform: translateY(0);
+        }
+
+        .btn-login .spinner-border {
+            display: none;
+        }
+
+        .btn-login.loading .spinner-border {
+            display: inline-block;
+        }
+
+        .btn-login.loading .btn-text {
+            display: none;
+        }
+
+        .alert {
+            border-radius: 12px;
+            border: none;
+            padding: 14px 20px;
+            font-size: 0.9rem;
+            animation: shake 0.5s ease;
+        }
+
+        @@keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(5px); }
+            75% { transform: translateX(-5px); }
+        }
+
+        .footer-text {
+            text-align: center;
+            margin-top: 25px;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 0.85rem;
+        }
+
+        .footer-text a {
+            color: rgba(255, 255, 255, 0.7);
+            text-decoration: none;
+        }
+
+        /* Decorative elements */
+        .decoration-circle {
+            position: fixed;
+            border-radius: 50%;
+            z-index: 0;
+        }
+
+        .decoration-circle.c1 {
+            width: 300px;
+            height: 300px;
+            background: rgba(102, 126, 234, 0.1);
+            top: -100px;
+            right: -100px;
+        }
+
+        .decoration-circle.c2 {
+            width: 200px;
+            height: 200px;
+            background: rgba(118, 75, 162, 0.1);
+            bottom: -50px;
+            left: -50px;
+        }
+
+        .decoration-circle.c3 {
+            width: 150px;
+            height: 150px;
+            background: rgba(255, 255, 255, 0.05);
+            top: 50%;
+            left: 10%;
+        }
+    </style>
+</head>
+<body>
+    <!-- Decorative -->
+    <div class="decoration-circle c1"></div>
+    <div class="decoration-circle c2"></div>
+    <div class="decoration-circle c3"></div>
+
+    <!-- Particles -->
+    <div class="particles" id="particles"></div>
+
+    <div class="login-container">
+        <div class="login-card">
+            <div class="login-header">
+                <div class="login-icon">
+                    <i class="fas fa-warehouse"></i>
+                </div>
+                <h2>نظام إدارة المخازن</h2>
+                <p>قم بتسجيل الدخول للمتابعة</p>
+            </div>
+
+            @if (!ViewData.ModelState.IsValid && ViewData.ModelState.ErrorCount > 0)
+            {
+                <div class="alert alert-danger d-flex align-items-center mb-4" role="alert">
+                    <i class="fas fa-exclamation-circle me-2"></i>
+                    <div>
+                        @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                        {
+                            <span>@error.ErrorMessage</span>
+                        }
+                    </div>
+                </div>
+            }
+
+            <form asp-action="Login" method="post" id="loginForm">
+                <input type="hidden" name="returnUrl" value="@ViewData["ReturnUrl"]" />
+
+                <div class="form-floating position-relative">
+                    <input type="text" class="form-control" id="username" name="Username"
+                           placeholder="اسم المستخدم" value="@Model?.Username"
+                           autocomplete="username" autofocus>
+                    <label for="username">اسم المستخدم</label>
+                    <i class="fas fa-user input-icon"></i>
+                </div>
+
+                <div class="form-floating position-relative">
+                    <input type="password" class="form-control" id="password" name="Password"
+                           placeholder="كلمة المرور" autocomplete="current-password">
+                    <label for="password">كلمة المرور</label>
+                    <i class="fas fa-lock input-icon"></i>
+                    <button type="button" class="password-toggle" onclick="togglePassword()">
+                        <i class="fas fa-eye" id="toggleIcon"></i>
+                    </button>
+                </div>
+
+                <div class="form-check">
+                    <input type="checkbox" class="form-check-input" id="rememberMe" name="RememberMe" value="true">
+                    <label class="form-check-label" for="rememberMe">تذكرني</label>
+                </div>
+
+                <button type="submit" class="btn btn-login" id="btnLogin">
+                    <span class="btn-text">
+                        <i class="fas fa-sign-in-alt me-2"></i>
+                        تسجيل الدخول
+                    </span>
+                    <span class="spinner-border spinner-border-sm" role="status"></span>
+                </button>
+            </form>
+        </div>
+
+        <div class="footer-text">
+            <p>نظام إدارة المخازن &copy; @DateTime.Now.Year</p>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Toggle password visibility
+        function togglePassword() {
+            const input = document.getElementById('password');
+            const icon = document.getElementById('toggleIcon');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.replace('fa-eye', 'fa-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.replace('fa-eye-slash', 'fa-eye');
+            }
+        }
+
+        // Loading state on submit
+        document.getElementById('loginForm').addEventListener('submit', function () {
+            const btn = document.getElementById('btnLogin');
+            btn.classList.add('loading');
+            btn.disabled = true;
+        });
+
+        // Create floating particles
+        (function () {
+            const container = document.getElementById('particles');
+            for (let i = 0; i < 40; i++) {
+                const particle = document.createElement('div');
+                particle.classList.add('particle');
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.width = (Math.random() * 4 + 2) + 'px';
+                particle.style.height = particle.style.width;
+                particle.style.animationDuration = (Math.random() * 15 + 10) + 's';
+                particle.style.animationDelay = (Math.random() * 10) + 's';
+                container.appendChild(particle);
+            }
+        })();
+
+        // Enter key support
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') {
+                document.getElementById('loginForm').requestSubmit();
+            }
+        });
+    </script>
+</body>
+</html>

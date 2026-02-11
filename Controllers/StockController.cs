@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using WarehouseManagement.Data;
@@ -6,6 +7,7 @@ using WarehouseManagement.Models.ViewModels;
 
 namespace WarehouseManagement.Controllers
 {
+    [Authorize]
     public class StockController : Controller
     {
         private readonly WarehouseContext _context;

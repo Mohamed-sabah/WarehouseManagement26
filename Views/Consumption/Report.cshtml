@@ -1,273 +1,308 @@
-@model ConsumptionReportViewModel
+@model WarehouseManagement.Models.ViewModels.ConsumptionReportViewModel
 @{
-    ViewData["Title"] = "نموذج رقم (5) - سجل الاستهلاك";
-    ViewData["Subtitle"] = $"من {Model.StartDate:yyyy/MM/dd} إلى {Model.EndDate:yyyy/MM/dd}";
+    ViewData["Title"] = "تقرير الاستهلاك";
+    var arabicMonths = new[] { "", "كانون الثاني", "شباط", "آذار", "نيسان", "أيار", "حزيران", "تموز", "آب", "أيلول", "تشرين الأول", "تشرين الثاني", "كانون الأول" };
+    var currentYear = Model.StartDate.Year;
 }
 
-<div class="page-header d-flex justify-content-between align-items-center mb-4 no-print">
-    <div>
-        <h1><i class="fas fa-file-invoice me-2"></i>نموذج رقم (5)</h1>
-        <small class="text-muted">سجل الاستهلاك والصرف</small>
-    </div>
-    <div>
-        <a asp-action="Index" class="btn btn-secondary">
-            <i class="fas fa-arrow-right me-1"></i>العودة
-        </a>
-        <button onclick="window.print()" class="btn btn-info">
-            <i class="fas fa-print me-1"></i>طباعة
-        </button>
-        <a asp-action="ExportReport" asp-route-startDate="@Model.StartDate.ToString("yyyy-MM-dd")" 
-           asp-route-endDate="@Model.EndDate.ToString("yyyy-MM-dd")" class="btn btn-success">
-            <i class="fas fa-file-excel me-1"></i>تصدير Excel
-        </a>
-    </div>
-</div>
+<div class="container-fluid" dir="rtl">
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/"><i class="bi bi-house"></i> الرئيسية</a></li>
+            <li class="breadcrumb-item"><a href="/Consumption">سجلات الاستهلاك</a></li>
+            <li class="breadcrumb-item active">التقرير</li>
+        </ol>
+    </nav>
 
-<!-- Print Header -->
-<div class="print-header text-center mb-4" style="display: none;">
-    <h4>جمهورية العراق</h4>
-    <h5>@Model.InstitutionName</h5>
-    <h3 class="mt-3">نموذج رقم (5)</h3>
-    <h4>سجل الاستهلاك والصرف</h4>
-    <p>للفترة من @Model.StartDate.ToString("yyyy/MM/dd") إلى @Model.EndDate.ToString("yyyy/MM/dd")</p>
-</div>
-
-<!-- Filter Card -->
-<div class="card mb-4 no-print">
-    <div class="card-header">
-        <i class="fas fa-filter me-2"></i>خيارات التصفية
-    </div>
-    <div class="card-body">
-        <form asp-action="Report" method="get" class="row g-3">
-            <div class="col-md-3">
-                <label class="form-label">من تاريخ</label>
-                <input type="date" name="startDate" class="form-control" value="@Model.StartDate.ToString("yyyy-MM-dd")" />
-            </div>
-            <div class="col-md-3">
-                <label class="form-label">إلى تاريخ</label>
-                <input type="date" name="endDate" class="form-control" value="@Model.EndDate.ToString("yyyy-MM-dd")" />
-            </div>
-            <div class="col-md-3">
-                <label class="form-label">الفئة</label>
-                <select name="categoryId" class="form-select">
-                    <option value="">-- جميع الفئات --</option>
-                    @foreach (var cat in ViewBag.Categories as IEnumerable<Category>)
-                    {
-                        <option value="@cat.Id" selected="@(cat.Id == Model.CategoryId)">@cat.Name</option>
-                    }
-                </select>
-            </div>
-            <div class="col-md-3 d-flex align-items-end">
-                <button type="submit" class="btn btn-primary w-100">
-                    <i class="fas fa-search me-1"></i>عرض التقرير
-                </button>
-            </div>
-        </form>
-    </div>
-</div>
-
-<!-- Statistics Cards -->
-<div class="row mb-4 no-print">
-    <div class="col-md-3">
-        <div class="card bg-primary text-white text-center p-3">
-            <h3 class="mb-0">@Model.Items.Count</h3>
-            <small>عدد عمليات الصرف</small>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2><i class="bi bi-bar-chart text-primary"></i> تقرير الاستهلاك</h2>
+            <p class="text-muted mb-0">@Model.ReportTitle</p>
+        </div>
+        <div class="btn-group">
+            <a asp-action="ExportReport" asp-route-year="@currentYear" class="btn btn-success">
+                <i class="bi bi-file-excel"></i> تصدير Excel
+            </a>
+            <button onclick="window.print()" class="btn btn-outline-secondary">
+                <i class="bi bi-printer"></i> طباعة
+            </button>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="card bg-info text-white text-center p-3">
-            <h3 class="mb-0">@Model.Items.Sum(i => i.Quantity)</h3>
-            <small>إجمالي الكميات</small>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card bg-danger text-white text-center p-3">
-            <h3 class="mb-0">@Model.Items.Sum(i => i.TotalValue).ToString("N0")</h3>
-            <small>إجمالي القيمة (د.ع)</small>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card bg-secondary text-white text-center p-3">
-            <h3 class="mb-0">@Model.Items.Select(i => i.DepartmentName).Distinct().Count()</h3>
-            <small>عدد الجهات المستلمة</small>
-        </div>
-    </div>
-</div>
 
-<!-- Main Report Table -->
-<div class="card">
-    <div class="card-header bg-dark text-white">
-        <i class="fas fa-table me-2"></i>سجل الاستهلاك والصرف
+    <!-- فلاتر -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">من تاريخ</label>
+                    <input type="date" name="startDate" class="form-control" value="@Model.StartDate.ToString("yyyy-MM-dd")" />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">إلى تاريخ</label>
+                    <input type="date" name="endDate" class="form-control" value="@Model.EndDate.ToString("yyyy-MM-dd")" />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">التصنيف</label>
+                    <select name="categoryId" class="form-select">
+                        <option value="">الكل</option>
+                        @if (ViewBag.Categories != null)
+                        {
+                            foreach (var cat in ViewBag.Categories as IEnumerable<dynamic>)
+                            {
+                                <option value="@cat.Id" selected="@(Model.CategoryId == cat.Id)">@cat.Name</option>
+                            }
+                        }
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-filter"></i> تطبيق
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
-    <div class="card-body p-0">
-        <div class="table-responsive">
-            <table class="table table-bordered table-striped mb-0 report-table">
-                <thead class="table-dark">
-                    <tr>
-                        <th class="text-center">ت</th>
-                        <th class="text-center">التاريخ</th>
-                        <th class="text-center">رقم الصرف</th>
-                        <th class="text-center">رمز المادة</th>
-                        <th>اسم المادة</th>
-                        <th class="text-center">الوحدة</th>
-                        <th class="text-center">الكمية</th>
-                        <th class="text-center">سعر الوحدة</th>
-                        <th class="text-center">القيمة الإجمالية</th>
-                        <th>الجهة المستلمة</th>
-                        <th>الغرض</th>
-                        <th class="text-center">المستلم</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @{
-                        int index = 1;
-                        decimal grandTotal = 0;
-                    }
-                    @foreach (var item in Model.Items.OrderBy(i => i.ConsumptionDate))
-                    {
-                        grandTotal += item.TotalValue;
+
+    <!-- الإحصائيات -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body text-center">
+                    <h3>@(Model.Statistics?.TotalItems ?? Model.Records?.Count ?? 0)</h3>
+                    <p class="mb-0">إجمالي السجلات</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body text-center">
+                    <h3>@(Model.Statistics?.TotalQuantity ?? Model.Records?.Sum(r => r.ConsumedQuantity) ?? 0)</h3>
+                    <p class="mb-0">إجمالي الكميات</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-dark">
+                <div class="card-body text-center">
+                    <h3>@((Model.Statistics?.TotalOriginalValue ?? Model.Records?.Sum(r => r.OriginalValue) ?? 0).ToString("N0")) <small>د.ع</small></h3>
+                    <p class="mb-0">القيمة الأصلية</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-danger text-white">
+                <div class="card-body text-center">
+                    <h3>@((Model.Statistics?.TotalLoss ?? Model.Records?.Sum(r => r.LossValue) ?? 0).ToString("N0")) <small>د.ع</small></h3>
+                    <p class="mb-0">إجمالي الخسائر</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- جدول البيانات -->
+    <div class="card shadow-sm">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="bi bi-table"></i> سجلات الاستهلاك</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-striped table-hover mb-0">
+                    <thead class="table-dark">
                         <tr>
-                            <td class="text-center">@(index++)</td>
-                            <td class="text-center">@item.ConsumptionDate.ToString("yyyy/MM/dd")</td>
-                            <td class="text-center"><code>@item.VoucherNumber</code></td>
-                            <td class="text-center"><code>@item.MaterialCode</code></td>
-                            <td>@item.MaterialName</td>
-                            <td class="text-center">@item.Unit</td>
-                            <td class="text-center">@item.Quantity</td>
-                            <td class="text-end">@item.UnitPrice.ToString("N0")</td>
-                            <td class="text-end">@item.TotalValue.ToString("N0")</td>
-                            <td>@item.DepartmentName</td>
-                            <td>@item.Purpose</td>
-                            <td class="text-center">@item.ReceiverName</td>
+                            <th>#</th>
+                            <th>التاريخ</th>
+                            <th>كود المادة</th>
+                            <th>اسم المادة</th>
+                            <th>الكمية</th>
+                            <th>السبب</th>
+                            <th>القرار</th>
+                            <th>القيمة الأصلية</th>
+                            <th>الخسارة</th>
+                            <th>الإجراءات</th>
                         </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.Records != null && Model.Records.Any())
+                        {
+                            int counter = 1;
+                            foreach (var record in Model.Records)
+                            {
+                                <tr>
+                                    <td>@counter</td>
+                                    <td>@record.ReportDate.ToString("yyyy/MM/dd")</td>
+                                    <td><code>@record.InventoryRecord?.Material?.Code</code></td>
+                                    <td>@record.InventoryRecord?.Material?.Name</td>
+                                    <td>@record.ConsumedQuantity @record.InventoryRecord?.Material?.Unit</td>
+                                    <td>
+                                        @{
+                                            var reasonStr = record.Reason.ToString();
+                                        }
+                                        @switch (reasonStr)
+                                        {
+                                            case "NormalUse": <text>استخدام عادي</text> break;
+                                            case "Obsolescence": <text>انتهاء صلاحية</text> break;
+                                            case "TechnicalFailure": <text>عطل فني</text> break;
+                                            case "Accident": <text>حادث</text> break;
+                                            case "EndOfLife": <text>انتهاء العمر</text> break;
+                                            default: @reasonStr break;
+                                        }
+                                    </td>
+                                    <td>
+                                        @{
+                                            var decisionStr = record.Decision.ToString();
+                                            var badgeClass = decisionStr == "Dispose" ? "bg-danger" : 
+                                                            decisionStr == "Sell" ? "bg-success" : 
+                                                            decisionStr == "Repair" ? "bg-info" : "bg-warning";
+                                        }
+                                        <span class="badge @badgeClass">
+                                            @switch (decisionStr)
+                                            {
+                                                case "Dispose": <text>إتلاف</text> break;
+                                                case "Sell": <text>بيع</text> break;
+                                                case "Repair": <text>إصلاح</text> break;
+                                                case "UnderReview": <text>قيد المراجعة</text> break;
+                                                default: @decisionStr break;
+                                            }
+                                        </span>
+                                    </td>
+                                    <td>@record.OriginalValue.ToString("N0")</td>
+                                    <td class="text-danger">@record.LossValue.ToString("N0")</td>
+                                    <td>
+                                        <a href="/Consumption/Details/@record.Id" class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                counter++;
+                            }
+                        }
+                        else if (Model.Items != null && Model.Items.Any())
+                        {
+                            int counter = 1;
+                            foreach (var item in Model.Items)
+                            {
+                                <tr>
+                                    <td>@counter</td>
+                                    <td>@item.ConsumptionDate.ToString("yyyy/MM/dd")</td>
+                                    <td><code>@item.MaterialCode</code></td>
+                                    <td>@item.MaterialName</td>
+                                    <td>@item.Quantity @item.Unit</td>
+                                    <td>@(item.Purpose ?? "-")</td>
+                                    <td>-</td>
+                                    <td>@item.TotalValue.ToString("N0")</td>
+                                    <td class="text-danger">@item.TotalValue.ToString("N0")</td>
+                                    <td>-</td>
+                                </tr>
+                                counter++;
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="10" class="text-center py-4">
+                                    <i class="bi bi-inbox text-muted" style="font-size: 3rem;"></i>
+                                    <p class="text-muted mt-2">لا توجد سجلات استهلاك لهذه الفترة</p>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                    @if (Model.Records != null && Model.Records.Any())
+                    {
+                        <tfoot class="table-secondary">
+                            <tr>
+                                <th colspan="4">الإجمالي</th>
+                                <th>@Model.Records.Sum(r => r.ConsumedQuantity)</th>
+                                <th colspan="2"></th>
+                                <th>@Model.Records.Sum(r => r.OriginalValue).ToString("N0")</th>
+                                <th class="text-danger">@Model.Records.Sum(r => r.LossValue).ToString("N0")</th>
+                                <th></th>
+                            </tr>
+                        </tfoot>
                     }
-                </tbody>
-                <tfoot class="table-secondary fw-bold">
-                    <tr>
-                        <td colspan="6" class="text-start">المجموع الكلي</td>
-                        <td class="text-center">@Model.Items.Sum(i => i.Quantity)</td>
-                        <td></td>
-                        <td class="text-end">@grandTotal.ToString("N0")</td>
-                        <td colspan="3"></td>
-                    </tr>
-                </tfoot>
-            </table>
-        </div>
-    </div>
-</div>
-
-<!-- Summary by Department -->
-<div class="card mt-4">
-    <div class="card-header">
-        <i class="fas fa-chart-pie me-2"></i>ملخص حسب الجهة المستلمة
-    </div>
-    <div class="card-body p-0">
-        <table class="table table-bordered mb-0">
-            <thead class="table-light">
-                <tr>
-                    <th>الجهة المستلمة</th>
-                    <th class="text-center">عدد العمليات</th>
-                    <th class="text-center">إجمالي الكميات</th>
-                    <th class="text-center">إجمالي القيمة</th>
-                    <th class="text-center">النسبة</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var dept in Model.Items.GroupBy(i => i.DepartmentName).OrderByDescending(g => g.Sum(i => i.TotalValue)))
-                {
-                    var deptTotal = dept.Sum(i => i.TotalValue);
-                    var percentage = grandTotal > 0 ? (deptTotal / grandTotal * 100) : 0;
-                    <tr>
-                        <td>@dept.Key</td>
-                        <td class="text-center">@dept.Count()</td>
-                        <td class="text-center">@dept.Sum(i => i.Quantity)</td>
-                        <td class="text-end">@deptTotal.ToString("N0")</td>
-                        <td>
-                            <div class="progress" style="height: 20px;">
-                                <div class="progress-bar bg-info" style="width: @percentage%">
-                                    @percentage.ToString("F1")%
-                                </div>
-                            </div>
-                        </td>
-                    </tr>
-                }
-            </tbody>
-        </table>
-    </div>
-</div>
-
-<!-- Summary by Category -->
-<div class="card mt-4">
-    <div class="card-header">
-        <i class="fas fa-layer-group me-2"></i>ملخص حسب الفئة
-    </div>
-    <div class="card-body p-0">
-        <table class="table table-bordered mb-0">
-            <thead class="table-light">
-                <tr>
-                    <th>الفئة</th>
-                    <th class="text-center">عدد المواد</th>
-                    <th class="text-center">إجمالي الكميات</th>
-                    <th class="text-center">إجمالي القيمة</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var cat in Model.Items.GroupBy(i => i.CategoryName).OrderByDescending(g => g.Sum(i => i.TotalValue)))
-                {
-                    <tr>
-                        <td>@cat.Key</td>
-                        <td class="text-center">@cat.Select(i => i.MaterialCode).Distinct().Count()</td>
-                        <td class="text-center">@cat.Sum(i => i.Quantity)</td>
-                        <td class="text-end">@cat.Sum(i => i.TotalValue).ToString("N0")</td>
-                    </tr>
-                }
-            </tbody>
-        </table>
-    </div>
-</div>
-
-<!-- Signatures Section -->
-<div class="card mt-4 signatures-section">
-    <div class="card-header">
-        <i class="fas fa-signature me-2"></i>التوقيعات
-    </div>
-    <div class="card-body">
-        <div class="row text-center">
-            <div class="col-md-4">
-                <div class="border-bottom border-dark mb-2" style="height: 60px;"></div>
-                <strong>أمين المخزن</strong>
-                <p class="text-muted mb-0">الاسم والتوقيع</p>
-            </div>
-            <div class="col-md-4">
-                <div class="border-bottom border-dark mb-2" style="height: 60px;"></div>
-                <strong>المحاسب</strong>
-                <p class="text-muted mb-0">الاسم والتوقيع</p>
-            </div>
-            <div class="col-md-4">
-                <div class="border-bottom border-dark mb-2" style="height: 60px;"></div>
-                <strong>المدير المالي</strong>
-                <p class="text-muted mb-0">الاسم والتوقيع</p>
+                </table>
             </div>
         </div>
     </div>
-</div>
 
-@section Styles {
-    <style>
-        .report-table th, .report-table td {
-            vertical-align: middle;
-            font-size: 0.85rem;
-        }
-        
-        @@media print {
-            .no-print { display: none !important; }
-            .print-header { display: block !important; }
-            .card { border: 1px solid #000 !important; margin-bottom: 15px !important; }
-            .card-header { background: #f0f0f0 !important; color: #000 !important; }
-            .table-dark { background: #ddd !important; color: #000 !important; }
-            .signatures-section { page-break-inside: avoid; }
-            body { font-size: 11px; }
-            .progress { border: 1px solid #000; }
-        }
-    </style>
-}
+    <!-- ملخص حسب السبب والقرار -->
+    @if (Model.Records != null && Model.Records.Any())
+    {
+        <div class="row mt-4">
+            <div class="col-md-6">
+                <div class="card shadow-sm">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-pie-chart"></i> حسب السبب</h5>
+                    </div>
+                    <ul class="list-group list-group-flush">
+                        @if (Model.Statistics?.ByReason != null && Model.Statistics.ByReason.Any())
+                        {
+                            foreach (var kvp in Model.Statistics.ByReason)
+                            {
+                                <li class="list-group-item d-flex justify-content-between">
+                                    <span>@kvp.Key</span>
+                                    <span class="badge bg-primary">@kvp.Value سجل</span>
+                                </li>
+                            }
+                        }
+                        else
+                        {
+                            foreach (var group in Model.Records.GroupBy(r => r.Reason))
+                            {
+                                var reasonName = group.Key.ToString() switch
+                                {
+                                    "NormalUse" => "استخدام عادي",
+                                    "Obsolescence" => "انتهاء صلاحية",
+                                    "TechnicalFailure" => "عطل فني",
+                                    "Accident" => "حادث",
+                                    "EndOfLife" => "انتهاء العمر",
+                                    _ => group.Key.ToString()
+                                };
+                                <li class="list-group-item d-flex justify-content-between">
+                                    <span>@reasonName</span>
+                                    <span class="badge bg-primary">@group.Count() سجل</span>
+                                </li>
+                            }
+                        }
+                    </ul>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card shadow-sm">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-clipboard-check"></i> حسب القرار</h5>
+                    </div>
+                    <ul class="list-group list-group-flush">
+                        @if (Model.Statistics?.ByDecision != null && Model.Statistics.ByDecision.Any())
+                        {
+                            foreach (var kvp in Model.Statistics.ByDecision)
+                            {
+                                <li class="list-group-item d-flex justify-content-between">
+                                    <span>@kvp.Key</span>
+                                    <span class="badge bg-secondary">@kvp.Value سجل</span>
+                                </li>
+                            }
+                        }
+                        else
+                        {
+                            foreach (var group in Model.Records.GroupBy(r => r.Decision))
+                            {
+                                var decisionName = group.Key.ToString() switch
+                                {
+                                    "Dispose" => "إتلاف",
+                                    "Sell" => "بيع",
+                                    "Repair" => "إصلاح",
+                                    "UnderReview" => "قيد المراجعة",
+                                    _ => group.Key.ToString()
+                                };
+                                <li class="list-group-item d-flex justify-content-between">
+                                    <span>@decisionName</span>
+                                    <span class="badge bg-secondary">@group.Sum(r => r.LossValue).ToString("N0") د.ع</span>
+                                </li>
+                            }
+                        }
+                    </ul>
+                </div>
+            </div>
+        </div>
+    }
+</div>

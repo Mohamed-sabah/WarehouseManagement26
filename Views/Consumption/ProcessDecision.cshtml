@@ -1,0 +1,237 @@
+@model WarehouseManagement.Models.ViewModels.ProcessDecisionViewModel
+@{
+    ViewData["Title"] = "معالجة قرار الاستهلاك";
+}
+
+<div class="container-fluid" dir="rtl">
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/"><i class="bi bi-house"></i> الرئيسية</a></li>
+            <li class="breadcrumb-item"><a href="/Consumption">سجلات الاستهلاك</a></li>
+            <li class="breadcrumb-item"><a href="/Consumption/Details/@Model.ConsumptionRecordId">سجل #@Model.ConsumptionRecordId</a></li>
+            <li class="breadcrumb-item active">معالجة القرار</li>
+        </ol>
+    </nav>
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2><i class="bi bi-gear text-primary"></i> معالجة قرار الاستهلاك</h2>
+            <p class="text-muted mb-0">تنفيذ قرار اللجنة لسجل الاستهلاك #@Model.ConsumptionRecordId</p>
+        </div>
+        <a asp-action="Details" asp-route-id="@Model.ConsumptionRecordId" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-right"></i> العودة
+        </a>
+    </div>
+
+    <div class="row">
+        <!-- معلومات السجل -->
+        <div class="col-lg-4">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-file-text"></i> معلومات السجل</h5>
+                </div>
+                <div class="card-body">
+                    @if (Model.Record != null)
+                    {
+                        <table class="table table-borderless">
+                            <tr>
+                                <th class="text-muted">المادة:</th>
+                                <td><strong>@Model.Record.InventoryRecord?.Material?.Name</strong></td>
+                            </tr>
+                            <tr>
+                                <th class="text-muted">الكود:</th>
+                                <td><code>@Model.Record.InventoryRecord?.Material?.Code</code></td>
+                            </tr>
+                            <tr>
+                                <th class="text-muted">الكمية:</th>
+                                <td>@Model.Record.ConsumedQuantity @Model.Record.InventoryRecord?.Material?.Unit</td>
+                            </tr>
+                            <tr>
+                                <th class="text-muted">نسبة التلف:</th>
+                                <td>@Model.Record.DamagePercentage%</td>
+                            </tr>
+                            <tr>
+                                <th class="text-muted">السبب:</th>
+                                <td>
+                                    @{
+                                        var reasonStr = Model.Record.Reason.ToString();
+                                    }
+                                    @switch (reasonStr)
+                                    {
+                                        case "NormalUse": <text>استخدام عادي</text> break;
+                                        case "Obsolescence": <text>انتهاء الصلاحية</text> break;
+                                        case "TechnicalFailure": <text>عطل فني</text> break;
+                                        case "Accident": <text>حادث / تلف</text> break;
+                                        default: @reasonStr break;
+                                    }
+                                </td>
+                            </tr>
+                            <tr>
+                                <th class="text-muted">القرار الحالي:</th>
+                                <td>
+                                    @{
+                                        var decisionStr = Model.Record.Decision.ToString();
+                                        var badgeClass = decisionStr == "Dispose" ? "bg-danger" : 
+                                                        decisionStr == "Sell" ? "bg-success" : 
+                                                        decisionStr == "Repair" ? "bg-info" : "bg-warning";
+                                    }
+                                    <span class="badge @badgeClass">
+                                        @switch (decisionStr)
+                                        {
+                                            case "Dispose": <text>إتلاف</text> break;
+                                            case "Sell": <text>بيع</text> break;
+                                            case "Repair": <text>إصلاح</text> break;
+                                            case "UnderReview": <text>قيد المراجعة</text> break;
+                                            default: @decisionStr break;
+                                        }
+                                    </span>
+                                </td>
+                            </tr>
+                        </table>
+                    }
+                </div>
+            </div>
+
+            <!-- القيمة المالية -->
+            @if (Model.Record != null)
+            {
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0"><i class="bi bi-currency-dollar"></i> القيمة المالية</h5>
+                    </div>
+                    <div class="card-body text-center">
+                        <div class="row">
+                            <div class="col-6">
+                                <p class="text-muted mb-1">القيمة الأصلية</p>
+                                <h5 class="text-primary">@Model.Record.OriginalValue.ToString("N0") د.ع</h5>
+                            </div>
+                            <div class="col-6">
+                                <p class="text-muted mb-1">القيمة المتبقية</p>
+                                <h5 class="text-success">@Model.Record.ResidualValue.ToString("N0") د.ع</h5>
+                            </div>
+                        </div>
+                        <hr />
+                        <p class="text-muted mb-1">الخسارة المتوقعة</p>
+                        <h4 class="text-danger">@Model.Record.LossValue.ToString("N0") د.ع</h4>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <!-- نموذج المعالجة -->
+        <div class="col-lg-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-warning">
+                    <h5 class="mb-0"><i class="bi bi-clipboard-check"></i> تنفيذ القرار</h5>
+                </div>
+                <div class="card-body">
+                    <form asp-action="ProcessDecision" method="post">
+                        <input type="hidden" asp-for="ConsumptionRecordId" />
+                        
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+                        <!-- نوع المعالجة -->
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">نوع المعالجة <span class="text-danger">*</span></label>
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="form-check card p-3">
+                                        <input class="form-check-input" type="radio" asp-for="Action" value="Dispose" id="actionDispose" checked>
+                                        <label class="form-check-label" for="actionDispose">
+                                            <i class="bi bi-trash text-danger fs-3 d-block mb-2"></i>
+                                            <strong>إتلاف</strong>
+                                            <small class="d-block text-muted">التخلص النهائي</small>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-check card p-3">
+                                        <input class="form-check-input" type="radio" asp-for="Action" value="Revert" id="actionRevert">
+                                        <label class="form-check-label" for="actionRevert">
+                                            <i class="bi bi-arrow-return-left text-info fs-3 d-block mb-2"></i>
+                                            <strong>إرجاع</strong>
+                                            <small class="d-block text-muted">للمخزون</small>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-check card p-3">
+                                        <input class="form-check-input" type="radio" asp-for="Action" value="UpdateDecision" id="actionUpdate">
+                                        <label class="form-check-label" for="actionUpdate">
+                                            <i class="bi bi-pencil text-warning fs-3 d-block mb-2"></i>
+                                            <strong>تحديث</strong>
+                                            <small class="d-block text-muted">تحديث القرار</small>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr />
+
+                        <!-- تفاصيل التنفيذ -->
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="DisposalRecordNumber" class="form-label">رقم محضر التصرف</label>
+                                <input asp-for="DisposalRecordNumber" class="form-control" placeholder="رقم المحضر الرسمي" />
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="DisposalMethod" class="form-label">طريقة التصرف</label>
+                                <select asp-for="DisposalMethod" class="form-select">
+                                    <option value="">-- اختر الطريقة --</option>
+                                    <option value="حرق">حرق</option>
+                                    <option value="دفن">دفن</option>
+                                    <option value="إعادة تدوير">إعادة تدوير</option>
+                                    <option value="بيع كخردة">بيع كخردة</option>
+                                    <option value="تسليم لجهة مختصة">تسليم لجهة مختصة</option>
+                                    <option value="أخرى">أخرى</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row" id="saleDetails">
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="SaleValue" class="form-label">قيمة البيع (إن وجدت)</label>
+                                <div class="input-group">
+                                    <input asp-for="SaleValue" class="form-control" type="number" step="1000" />
+                                    <span class="input-group-text">د.ع</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Notes" class="form-label">ملاحظات التنفيذ</label>
+                            <textarea asp-for="Notes" class="form-control" rows="3" placeholder="أي ملاحظات إضافية..."></textarea>
+                        </div>
+
+                        <hr />
+
+                        <!-- تأكيد -->
+                        <div class="alert alert-warning">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="confirmProcess" required>
+                                <label class="form-check-label" for="confirmProcess">
+                                    <strong>أؤكد أن جميع البيانات صحيحة وتم تنفيذ القرار فعلياً</strong>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a asp-action="Details" asp-route-id="@Model.ConsumptionRecordId" class="btn btn-outline-secondary">
+                                <i class="bi bi-x-circle"></i> إلغاء
+                            </a>
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="bi bi-check-circle"></i> تنفيذ القرار
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

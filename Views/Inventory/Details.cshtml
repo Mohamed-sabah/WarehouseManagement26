@@ -1,0 +1,315 @@
+@model WarehouseManagement.Models.InventoryRecord
+@{
+    ViewData["Title"] = "تفاصيل سجل الجرد";
+}
+
+<div class="container-fluid" dir="rtl">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/"><i class="bi bi-house"></i> الرئيسية</a></li>
+            <li class="breadcrumb-item"><a href="/Inventory">سجلات الجرد</a></li>
+            <li class="breadcrumb-item active">تفاصيل السجل #@Model.Id</li>
+        </ol>
+    </nav>
+
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1">
+                <i class="bi bi-clipboard-check text-primary"></i>
+                سجل جرد: @Model.Material?.Name
+            </h2>
+            <p class="text-muted mb-0">سنة @Model.Year - @Model.Location?.Name</p>
+        </div>
+        <div class="btn-group">
+            <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning">
+                <i class="bi bi-pencil"></i> تعديل
+            </a>
+            <a asp-action="TransferToConsumption" asp-route-id="@Model.Id" class="btn btn-info">
+                <i class="bi bi-arrow-left-right"></i> تحويل للاستهلاك
+            </a>
+            <a asp-action="Index" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-right"></i> العودة
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- معلومات الجرد الأساسية -->
+        <div class="col-lg-8">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-info-circle"></i> معلومات سجل الجرد</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <th class="text-muted" style="width: 40%;">رقم السجل:</th>
+                                    <td><strong>#@Model.Id</strong></td>
+                                </tr>
+                                <tr>
+                                    <th class="text-muted">سنة الجرد:</th>
+                                    <td><span class="badge bg-primary fs-6">@Model.Year</span></td>
+                                </tr>
+                                <tr>
+                                    <th class="text-muted">تاريخ الجرد:</th>
+                                    <td>@Model.InventoryDate.ToString("yyyy/MM/dd")</td>
+                                </tr>
+                                <tr>
+                                    <th class="text-muted">القسم:</th>
+                                    <td>@(Model.Department ?? "-")</td>
+                                </tr>
+                                <tr>
+                                    <th class="text-muted">تاريخ الإنشاء:</th>
+                                    <td>@Model.CreatedDate.ToString("yyyy/MM/dd HH:mm")</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <th class="text-muted" style="width: 40%;">المادة:</th>
+                                    <td>
+                                        <a href="/Materials/Details/@Model.MaterialId">
+                                            @Model.Material?.Name
+                                        </a>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th class="text-muted">كود المادة:</th>
+                                    <td><code>@Model.Material?.Code</code></td>
+                                </tr>
+                                <tr>
+                                    <th class="text-muted">التصنيف:</th>
+                                    <td>@(Model.Material?.Category?.Name ?? "-")</td>
+                                </tr>
+                                <tr>
+                                    <th class="text-muted">الموقع:</th>
+                                    <td>
+                                        <a href="/Stock/ByLocation/@Model.LocationId">
+                                            <i class="bi bi-geo-alt"></i> @Model.Location?.Name
+                                        </a>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th class="text-muted">الحالة:</th>
+                                    <td>
+                                        <span class="badge @(Model.Condition == "جيدة" ? "bg-success" : Model.Condition == "متوسطة" ? "bg-warning" : "bg-danger")">
+                                            @Model.Condition
+                                        </span>
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- الكميات والفروقات -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="bi bi-calculator"></i> الكميات والفروقات</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-4">
+                            <div class="p-3 border rounded bg-light">
+                                <h6 class="text-muted mb-2">الكمية الدفترية</h6>
+                                <h3 class="text-primary mb-0">@Model.RecordedQuantity.ToString("N0")</h3>
+                                <small class="text-muted">@Model.Material?.Unit</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="p-3 border rounded bg-light">
+                                <h6 class="text-muted mb-2">الكمية الفعلية</h6>
+                                <h3 class="text-success mb-0">@Model.ActualQuantity.ToString("N0")</h3>
+                                <small class="text-muted">@Model.Material?.Unit</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="p-3 border rounded @(Model.HasShortage ? "bg-danger bg-opacity-10" : Model.HasSurplus ? "bg-success bg-opacity-10" : "bg-secondary bg-opacity-10")">
+                                <h6 class="text-muted mb-2">الفرق</h6>
+                                <h3 class="@(Model.HasShortage ? "text-danger" : Model.HasSurplus ? "text-success" : "text-secondary") mb-0">
+                                    @(Model.Difference > 0 ? "+" : "")@Model.Difference.ToString("N0")
+                                </h3>
+                                <small class="text-muted">
+                                    @if (Model.HasShortage)
+                                    {
+                                        <span class="text-danger"><i class="bi bi-arrow-down"></i> عجز</span>
+                                    }
+                                    else if (Model.HasSurplus)
+                                    {
+                                        <span class="text-success"><i class="bi bi-arrow-up"></i> زيادة</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-secondary"><i class="bi bi-check"></i> مطابق</span>
+                                    }
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+
+                    @if (Model.HasShortage || Model.HasSurplus)
+                    {
+                        <div class="alert @(Model.HasShortage ? "alert-warning" : "alert-info") mt-3 mb-0">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            @if (Model.HasShortage)
+                            {
+                                <span>يوجد عجز في الكمية بمقدار <strong>@Math.Abs(Model.Difference)</strong> @Model.Material?.Unit</span>
+                            }
+                            else
+                            {
+                                <span>يوجد فائض في الكمية بمقدار <strong>@Model.Difference</strong> @Model.Material?.Unit</span>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- القيمة المالية -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="bi bi-currency-dollar"></i> القيمة المالية</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4 text-center">
+                            <p class="text-muted mb-1">سعر الوحدة</p>
+                            <h4 class="text-primary">@Model.Material?.AveragePrice.ToString("N0") <small>د.ع</small></h4>
+                        </div>
+                        <div class="col-md-4 text-center">
+                            <p class="text-muted mb-1">القيمة الإجمالية (فعلي)</p>
+                            <h4 class="text-success">@Model.TotalCost.ToString("N0") <small>د.ع</small></h4>
+                        </div>
+                        <div class="col-md-4 text-center">
+                            <p class="text-muted mb-1">قيمة الفرق</p>
+                            @{
+                                var diffValue = Model.Difference * (Model.Material?.AveragePrice ?? 0);
+                            }
+                            <h4 class="@(diffValue < 0 ? "text-danger" : diffValue > 0 ? "text-success" : "text-secondary")">
+                                @(diffValue > 0 ? "+" : "")@diffValue.ToString("N0") <small>د.ع</small>
+                            </h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- الملاحظات -->
+            @if (!string.IsNullOrEmpty(Model.Notes))
+            {
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-sticky"></i> الملاحظات</h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="mb-0">@Model.Notes</p>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <!-- الشريط الجانبي -->
+        <div class="col-lg-4">
+            <!-- حالة السجل -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-flag"></i> حالة السجل</h5>
+                </div>
+                <div class="card-body text-center">
+                    @if (Model.IsMatching)
+                    {
+                        <div class="mb-3">
+                            <i class="bi bi-check-circle text-success" style="font-size: 4rem;"></i>
+                        </div>
+                        <h5 class="text-success">مطابق</h5>
+                        <p class="text-muted mb-0">الكمية الفعلية تطابق الكمية الدفترية</p>
+                    }
+                    else if (Model.HasShortage)
+                    {
+                        <div class="mb-3">
+                            <i class="bi bi-exclamation-triangle text-danger" style="font-size: 4rem;"></i>
+                        </div>
+                        <h5 class="text-danger">عجز</h5>
+                        <p class="text-muted mb-0">يوجد نقص بمقدار @Math.Abs(Model.Difference) @Model.Material?.Unit</p>
+                    }
+                    else
+                    {
+                        <div class="mb-3">
+                            <i class="bi bi-plus-circle text-info" style="font-size: 4rem;"></i>
+                        </div>
+                        <h5 class="text-info">فائض</h5>
+                        <p class="text-muted mb-0">يوجد زيادة بمقدار @Model.Difference @Model.Material?.Unit</p>
+                    }
+                </div>
+            </div>
+
+            <!-- سجلات الاستهلاك المرتبطة -->
+            @if (Model.Consumptions?.Any() == true)
+            {
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-warning">
+                        <h5 class="mb-0"><i class="bi bi-recycle"></i> سجلات الاستهلاك (@Model.Consumptions.Count)</h5>
+                    </div>
+                    <ul class="list-group list-group-flush">
+                        @foreach (var consumption in Model.Consumptions.Take(5))
+                        {
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <div>
+                                    <a href="/Consumption/Details/@consumption.Id">
+                                        سجل #@consumption.Id
+                                    </a>
+                                    <br>
+                                    <small class="text-muted">@consumption.ReportDate.ToString("yyyy/MM/dd")</small>
+                                </div>
+                                <span class="badge bg-secondary">@consumption.ConsumedQuantity @Model.Material?.Unit</span>
+                            </li>
+                        }
+                    </ul>
+                    @if (Model.Consumptions.Count > 5)
+                    {
+                        <div class="card-footer text-center">
+                            <a href="/Consumption?inventoryId=@Model.Id">عرض الكل (@Model.Consumptions.Count)</a>
+                        </div>
+                    }
+                </div>
+            }
+
+            <!-- إجراءات سريعة -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-lightning"></i> إجراءات سريعة</h5>
+                </div>
+                <div class="card-body d-grid gap-2">
+                    <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-outline-warning">
+                        <i class="bi bi-pencil"></i> تعديل السجل
+                    </a>
+                    <a asp-action="TransferToConsumption" asp-route-id="@Model.Id" class="btn btn-outline-info">
+                        <i class="bi bi-arrow-left-right"></i> تحويل للاستهلاك
+                    </a>
+                    <a href="/Materials/Details/@Model.MaterialId" class="btn btn-outline-primary">
+                        <i class="bi bi-box"></i> عرض المادة
+                    </a>
+                    <a href="/Stock/ByLocation/@Model.LocationId" class="btn btn-outline-secondary">
+                        <i class="bi bi-geo-alt"></i> عرض مخزون الموقع
+                    </a>
+                    <a asp-action="Delete" asp-route-id="@Model.Id" class="btn btn-outline-danger">
+                        <i class="bi bi-trash"></i> حذف السجل
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // طباعة السجل
+        function printRecord() {
+            window.print();
+        }
+    </script>
+}

@@ -16,18 +16,29 @@ namespace WarehouseManagement.Controllers
         }
 
         // GET: Consumption
-        public async Task<IActionResult> Index(int? year, ConsumptionReason? reason, CommitteeDecision? decision, string? department, bool? isDisposed)
+        public async Task<IActionResult> Index(int? year, int? month, int? categoryId, string? searchTerm,
+            ConsumptionReason? reason, CommitteeDecision? decision)
         {
+            year ??= DateTime.Now.Year;
+
             var query = _context.ConsumptionRecords
                 .Include(c => c.InventoryRecord)
                     .ThenInclude(i => i.Material)
                         .ThenInclude(m => m.Category)
                 .Include(c => c.InventoryRecord)
                     .ThenInclude(i => i.Location)
+                .Where(c => c.ReportDate.Year == year)
                 .AsQueryable();
 
-            if (year.HasValue)
-                query = query.Where(c => c.ReportDate.Year == year.Value);
+            if (month.HasValue)
+                query = query.Where(c => c.ReportDate.Month == month.Value);
+
+            if (categoryId.HasValue)
+                query = query.Where(c => c.InventoryRecord.Material.CategoryId == categoryId.Value);
+
+            if (!string.IsNullOrEmpty(searchTerm))
+                query = query.Where(c => c.InventoryRecord.Material.Name.Contains(searchTerm) ||
+                                        c.InventoryRecord.Material.Code.Contains(searchTerm));
 
             if (reason.HasValue)
                 query = query.Where(c => c.Reason == reason.Value);
@@ -35,36 +46,41 @@ namespace WarehouseManagement.Controllers
             if (decision.HasValue)
                 query = query.Where(c => c.Decision == decision.Value);
 
-            if (!string.IsNullOrEmpty(department))
-                query = query.Where(c => c.InventoryRecord.Department == department);
-
-            if (isDisposed.HasValue)
-                query = query.Where(c => c.IsDisposed == isDisposed.Value);
-
             var records = await query.OrderByDescending(c => c.ReportDate).ToListAsync();
+
+            // تحديد ما إذا كان السجل تم التصرف فيه بناءً على DisposalDate
+            var disposedCount = records.Count(r => r.DisposalDate.HasValue);
+            var pendingCount = records.Count(r => !r.DisposalDate.HasValue);
 
             var viewModel = new ConsumptionListViewModel
             {
+                YearFilter = year,
+                SearchTerm = searchTerm,
                 ReasonFilter = reason,
                 DecisionFilter = decision,
-                Department = department,
-                YearFilter = year,
-                IsDisposedFilter = isDisposed,
                 Records = records,
                 Statistics = new ConsumptionStatistics
                 {
                     TotalItems = records.Count,
-                    TotalQuantity = records.Sum(c => c.ConsumedQuantity),
-                    TotalOriginalValue = records.Sum(c => c.StoredOriginalValue),
-                    TotalResidualValue = records.Sum(c => c.StoredResidualValue),
-                    ItemsDisposed = records.Count(c => c.IsDisposed),
-                    ItemsPending = records.Count(c => !c.IsDisposed),
-                    ByReason = records.GroupBy(c => c.Reason).ToDictionary(g => g.Key, g => g.Count()),
-                    ByDecision = records.GroupBy(c => c.Decision).ToDictionary(g => g.Key, g => g.Count())
+                    TotalQuantity = records.Sum(r => r.ConsumedQuantity),
+                    TotalOriginalValue = records.Sum(r => r.OriginalValue),
+                    TotalResidualValue = records.Sum(r => r.ResidualValue),
+                    ItemsDisposed = disposedCount,
+                    ItemsPending = pendingCount
                 },
-                Departments = await _context.InventoryRecords.Select(i => i.Department).Distinct().Where(d => d != null).ToListAsync()!,
-                AvailableYears = await _context.ConsumptionRecords.Select(c => c.ReportDate.Year).Distinct().OrderByDescending(y => y).ToListAsync()
+                AvailableYears = await _context.ConsumptionRecords
+                    .Select(c => c.ReportDate.Year)
+                    .Distinct()
+                    .OrderByDescending(y => y)
+                    .ToListAsync(),
+                Departments = await _context.InventoryRecords
+                    .Where(i => i.Department != null)
+                    .Select(i => i.Department!)
+                    .Distinct()
+                    .ToListAsync()
             };
+
+            ViewBag.Categories = await _context.Categories.Where(c => c.IsActive).OrderBy(c => c.Name).ToListAsync();
 
             return View(viewModel);
         }
@@ -88,33 +104,48 @@ namespace WarehouseManagement.Controllers
         }
 
         // GET: Consumption/Create
-        public async Task<IActionResult> Create(int? inventoryRecordId)
+        public async Task<IActionResult> Create(int? inventoryId)
         {
             var viewModel = new ConsumptionCreateEditViewModel
             {
                 Record = new ConsumptionRecord
                 {
-                    ReportDate = DateTime.Now,
-                    Reason = ConsumptionReason.EndOfUsefulLife,
-                    Decision = CommitteeDecision.Disposal
+                    ReportDate = DateTime.Now
                 },
-                SelectedInventoryRecordId = inventoryRecordId,
-                AvailableInventoryRecords = await GetAvailableInventoryRecords()
+                SelectedInventoryRecordId = inventoryId
             };
 
-            if (inventoryRecordId.HasValue)
+            if (inventoryId.HasValue)
             {
                 var inventory = await _context.InventoryRecords
                     .Include(i => i.Material)
-                    .FirstOrDefaultAsync(i => i.Id == inventoryRecordId.Value);
+                    .Include(i => i.Location)
+                    .FirstOrDefaultAsync(i => i.Id == inventoryId);
 
                 if (inventory != null)
                 {
                     viewModel.Record.InventoryRecordId = inventory.Id;
-                    viewModel.Record.ConsumedQuantity = inventory.ActualQuantity;
-                    viewModel.Record.OriginalUnitPrice = inventory.UnitPrice;
+                    viewModel.Record.InventoryRecord = inventory;
+                    viewModel.Record.OriginalUnitPrice = inventory.Material.AveragePrice;
                 }
             }
+
+            viewModel.AvailableInventoryRecords = await _context.InventoryRecords
+                .Include(i => i.Material)
+                .Include(i => i.Location)
+                .Where(i => i.ActualQuantity > 0)
+                .Select(i => new InventoryRecordSelectViewModel
+                {
+                    Id = i.Id,
+                    MaterialName = i.Material.Name,
+                    MaterialCode = i.Material.Code,
+                    AvailableQuantity = i.ActualQuantity,
+                    TotalCost = i.TotalCost,
+                    Department = i.Department,
+                    Year = i.Year
+                })
+                .OrderBy(i => i.MaterialName)
+                .ToListAsync();
 
             return View(viewModel);
         }
@@ -124,47 +155,38 @@ namespace WarehouseManagement.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(ConsumptionCreateEditViewModel viewModel)
         {
-            //if (ModelState.IsValid)
-            //{
+            if (ModelState.IsValid)
+            {
                 var inventory = await _context.InventoryRecords
                     .Include(i => i.Material)
-                        .ThenInclude(m => m.Purchases)
                     .FirstOrDefaultAsync(i => i.Id == viewModel.Record.InventoryRecordId);
 
-                if (inventory == null)
+                if (inventory != null)
                 {
-                    ModelState.AddModelError("Record.InventoryRecordId", "سجل الجرد غير موجود");
-                    viewModel.AvailableInventoryRecords = await GetAvailableInventoryRecords();
-                    return View(viewModel);
+                    viewModel.Record.OriginalUnitPrice = inventory.Material.AveragePrice;
+                    viewModel.Record.StoredOriginalValue = viewModel.Record.ConsumedQuantity * viewModel.Record.OriginalUnitPrice;
                 }
 
-                viewModel.Record.OriginalUnitPrice = inventory.Material.AveragePrice;
-                viewModel.Record.StoredOriginalValue = viewModel.Record.ConsumedQuantity * viewModel.Record.OriginalUnitPrice;
                 viewModel.Record.CreatedDate = DateTime.Now;
-
                 _context.ConsumptionRecords.Add(viewModel.Record);
-
-                // خصم من المخزون إذا طلب
-                if (viewModel.DeductFromStockAutomatically)
-                {
-                    var stock = await _context.MaterialStocks
-                        .FirstOrDefaultAsync(s => s.MaterialId == inventory.MaterialId &&
-                                                 s.LocationId == inventory.LocationId);
-
-                    if (stock != null && stock.Quantity >= viewModel.Record.ConsumedQuantity)
-                    {
-                        stock.Quantity -= viewModel.Record.ConsumedQuantity;
-                        stock.LastUpdated = DateTime.Now;
-                    }
-                }
-
                 await _context.SaveChangesAsync();
 
-                TempData["Success"] = "تم إضافة سجل الاستهلاك بنجاح";
+                TempData["Success"] = "تم إنشاء سجل الاستهلاك بنجاح";
                 return RedirectToAction(nameof(Details), new { id = viewModel.Record.Id });
-            //}
+            }
 
-            viewModel.AvailableInventoryRecords = await GetAvailableInventoryRecords();
+            viewModel.AvailableInventoryRecords = await _context.InventoryRecords
+                .Include(i => i.Material)
+                .Where(i => i.ActualQuantity > 0)
+                .Select(i => new InventoryRecordSelectViewModel
+                {
+                    Id = i.Id,
+                    MaterialName = i.Material.Name,
+                    MaterialCode = i.Material.Code,
+                    AvailableQuantity = i.ActualQuantity
+                })
+                .ToListAsync();
+
             return View(viewModel);
         }
 
@@ -173,37 +195,32 @@ namespace WarehouseManagement.Controllers
         {
             if (id == null) return NotFound();
 
-            var record = await _context.ConsumptionRecords.FindAsync(id);
+            var record = await _context.ConsumptionRecords
+                .Include(c => c.InventoryRecord)
+                    .ThenInclude(i => i.Material)
+                        .ThenInclude(m => m.Category)
+                .Include(c => c.InventoryRecord)
+                    .ThenInclude(i => i.Location)
+                .FirstOrDefaultAsync(c => c.Id == id);
+
             if (record == null) return NotFound();
 
-            if (record.IsDisposed)
-            {
-                TempData["Error"] = "لا يمكن تعديل سجل تم التصرف فيه";
-                return RedirectToAction(nameof(Details), new { id });
-            }
-
-            var viewModel = new ConsumptionCreateEditViewModel
-            {
-                Record = record,
-                AvailableInventoryRecords = await GetAvailableInventoryRecords()
-            };
-
-            return View(viewModel);
+            return View(record);
         }
 
         // POST: Consumption/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, ConsumptionCreateEditViewModel viewModel)
+        public async Task<IActionResult> Edit(int id, ConsumptionRecord record)
         {
-            if (id != viewModel.Record.Id) return NotFound();
+            if (id != record.Id) return NotFound();
 
             if (ModelState.IsValid)
             {
                 try
                 {
-                    viewModel.Record.StoredOriginalValue = viewModel.Record.ConsumedQuantity * viewModel.Record.OriginalUnitPrice;
-                    _context.Update(viewModel.Record);
+                    record.StoredOriginalValue = record.ConsumedQuantity * record.OriginalUnitPrice;
+                    _context.Update(record);
                     await _context.SaveChangesAsync();
                     TempData["Success"] = "تم تحديث سجل الاستهلاك بنجاح";
                 }
@@ -216,8 +233,12 @@ namespace WarehouseManagement.Controllers
                 return RedirectToAction(nameof(Details), new { id });
             }
 
-            viewModel.AvailableInventoryRecords = await GetAvailableInventoryRecords();
-            return View(viewModel);
+            record.InventoryRecord = await _context.InventoryRecords
+                .Include(i => i.Material)
+                .Include(i => i.Location)
+                .FirstOrDefaultAsync(i => i.Id == record.InventoryRecordId);
+
+            return View(record);
         }
 
         // GET: Consumption/ProcessDecision/5
@@ -228,6 +249,7 @@ namespace WarehouseManagement.Controllers
             var record = await _context.ConsumptionRecords
                 .Include(c => c.InventoryRecord)
                     .ThenInclude(i => i.Material)
+                        .ThenInclude(m => m.Category)
                 .Include(c => c.InventoryRecord)
                     .ThenInclude(i => i.Location)
                 .FirstOrDefaultAsync(c => c.Id == id);
@@ -244,57 +266,60 @@ namespace WarehouseManagement.Controllers
             return View(viewModel);
         }
 
-        // POST: Consumption/ProcessDecision
+        // POST: Consumption/ProcessDecision/5
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ProcessDecision(ProcessDecisionViewModel viewModel)
         {
-            if (ModelState.IsValid)
-            {
-                var record = await _context.ConsumptionRecords.FindAsync(viewModel.ConsumptionRecordId);
-                if (record == null) return NotFound();
-
-                switch (viewModel.Action)
-                {
-                    case DisposalAction.Dispose:
-                        record.IsDisposed = true;
-                        record.DisposalDate = DateTime.Now;
-                        record.DisposalRecordNumber = viewModel.DisposalRecordNumber;
-                        record.SaleValue = viewModel.SaleValue;
-                        record.Notes = $"{record.Notes}\n[تم التصرف] {viewModel.Notes}";
-                        TempData["Success"] = "تم تنفيذ التصرف بنجاح";
-                        break;
-
-                    case DisposalAction.Revert:
-                        record.IsDisposed = false;
-                        record.DisposalDate = null;
-                        record.DisposalRecordNumber = null;
-                        record.Notes = $"{record.Notes}\n[تم الإلغاء] {viewModel.Notes}";
-                        TempData["Success"] = "تم إلغاء التصرف بنجاح";
-                        break;
-
-                    case DisposalAction.UpdateDecision:
-                        record.Notes = $"{record.Notes}\n[تحديث] {viewModel.Notes}";
-                        TempData["Success"] = "تم تحديث السجل بنجاح";
-                        break;
-                }
-
-                await _context.SaveChangesAsync();
-                return RedirectToAction(nameof(Details), new { id = viewModel.ConsumptionRecordId });
-            }
-
-            viewModel.Record = await _context.ConsumptionRecords
+            var record = await _context.ConsumptionRecords
                 .Include(c => c.InventoryRecord)
-                    .ThenInclude(i => i.Material)
                 .FirstOrDefaultAsync(c => c.Id == viewModel.ConsumptionRecordId);
 
-            return View(viewModel);
+            if (record == null) return NotFound();
+
+            // تحديث الملاحظات
+            var currentNotes = record.Notes ?? "";
+            currentNotes += $"\n[معالجة {DateTime.Now:yyyy/MM/dd}] {viewModel.Action}: {viewModel.Notes}";
+
+            if (!string.IsNullOrEmpty(viewModel.DisposalRecordNumber))
+                currentNotes += $"\nرقم المحضر: {viewModel.DisposalRecordNumber}";
+
+            record.Notes = currentNotes;
+
+            switch (viewModel.Action)
+            {
+                case DisposalAction.Dispose:
+                    record.DisposalMethod = viewModel.DisposalMethod;
+                    record.DisposalDate = DateTime.Now;
+                    break;
+
+                case DisposalAction.Revert:
+                    if (record.InventoryRecord != null)
+                    {
+                        record.InventoryRecord.ActualQuantity += record.ConsumedQuantity;
+                        record.Notes += "\nتم إعادة الكمية للمخزون";
+                    }
+                    record.DisposalDate = null;
+                    break;
+
+                case DisposalAction.UpdateDecision:
+                    record.Notes += $"\nتم تحديث القرار";
+                    break;
+            }
+
+            if (viewModel.SaleValue.HasValue)
+                record.StoredResidualValue = viewModel.SaleValue.Value;
+
+            await _context.SaveChangesAsync();
+            TempData["Success"] = "تم معالجة القرار بنجاح";
+            return RedirectToAction(nameof(Details), new { id = viewModel.ConsumptionRecordId });
         }
 
         // GET: Consumption/Report
-        public async Task<IActionResult> Report(int? year, string? department)
+        public async Task<IActionResult> Report(DateTime? startDate, DateTime? endDate, int? categoryId)
         {
-            year ??= DateTime.Now.Year;
+            startDate ??= new DateTime(DateTime.Now.Year, 1, 1);
+            endDate ??= DateTime.Now;
 
             var query = _context.ConsumptionRecords
                 .Include(c => c.InventoryRecord)
@@ -302,36 +327,56 @@ namespace WarehouseManagement.Controllers
                         .ThenInclude(m => m.Category)
                 .Include(c => c.InventoryRecord)
                     .ThenInclude(i => i.Location)
-                .Where(c => c.ReportDate.Year == year);
+                .Where(c => c.ReportDate >= startDate && c.ReportDate <= endDate);
 
-            if (!string.IsNullOrEmpty(department))
-                query = query.Where(c => c.InventoryRecord.Department == department);
+            if (categoryId.HasValue)
+                query = query.Where(c => c.InventoryRecord.Material.CategoryId == categoryId.Value);
 
-            var records = await query.OrderBy(c => c.InventoryRecord.Material.Name).ToListAsync();
+            var records = await query.OrderBy(c => c.ReportDate).ToListAsync();
+
+            var byReason = records.GroupBy(r => r.Reason)
+                .ToDictionary(g => g.Key, g => g.Count());
+
+            var byDecision = records.GroupBy(r => r.Decision)
+                .ToDictionary(g => g.Key, g => g.Count());
+
+            // تحديد ما إذا كان السجل تم التصرف فيه بناءً على DisposalDate
+            var disposedCount = records.Count(r => r.DisposalDate.HasValue);
+            var pendingCount = records.Count(r => !r.DisposalDate.HasValue);
 
             var viewModel = new ConsumptionReportViewModel
             {
+                StartDate = startDate.Value,
+                EndDate = endDate.Value,
+                CategoryId = categoryId,
+                InstitutionName = "المؤسسة",
+                ReportTitle = "نموذج رقم (5) - قائمة بالموجودات المستهلكة",
                 ReportDate = DateTime.Now,
-                Department = department ?? "جميع الأقسام",
-                ReportTitle = $"نموذج رقم (5) - قائمة بالموجودات المستهلكة لسنة {year}",
                 Records = records,
                 Statistics = new ConsumptionStatistics
                 {
                     TotalItems = records.Count,
-                    TotalQuantity = records.Sum(c => c.ConsumedQuantity),
-                    TotalOriginalValue = records.Sum(c => c.StoredOriginalValue),
-                    TotalResidualValue = records.Sum(c => c.StoredResidualValue),
-                    ItemsDisposed = records.Count(c => c.IsDisposed),
-                    ItemsPending = records.Count(c => !c.IsDisposed),
-                    ByReason = records.GroupBy(c => c.Reason).ToDictionary(g => g.Key, g => g.Count()),
-                    ByDecision = records.GroupBy(c => c.Decision).ToDictionary(g => g.Key, g => g.Count())
+                    TotalQuantity = records.Sum(r => r.ConsumedQuantity),
+                    TotalOriginalValue = records.Sum(r => r.OriginalValue),
+                    TotalResidualValue = records.Sum(r => r.ResidualValue),
+                    ItemsDisposed = disposedCount,
+                    ItemsPending = pendingCount,
+                    ByReason = byReason,
+                    ByDecision = byDecision,
+                    GeneratedDate = DateTime.Now
                 }
             };
 
-            ViewBag.Year = year;
-            ViewBag.AvailableYears = await _context.ConsumptionRecords.Select(c => c.ReportDate.Year).Distinct().OrderByDescending(y => y).ToListAsync();
+            ViewBag.Categories = await _context.Categories.Where(c => c.IsActive).OrderBy(c => c.Name).ToListAsync();
 
             return View(viewModel);
+        }
+
+        // GET: Consumption/ExportReport
+        public async Task<IActionResult> ExportReport(int year, int? month, int? categoryId)
+        {
+            TempData["Info"] = "جاري تطوير ميزة التصدير";
+            return RedirectToAction(nameof(Report), new { startDate = new DateTime(year, 1, 1), endDate = new DateTime(year, 12, 31), categoryId });
         }
 
         // GET: Consumption/Delete/5
@@ -359,7 +404,8 @@ namespace WarehouseManagement.Controllers
             var record = await _context.ConsumptionRecords.FindAsync(id);
             if (record == null) return NotFound();
 
-            if (record.IsDisposed)
+            // التحقق من أن السجل لم يتم التصرف فيه بعد
+            if (record.DisposalDate.HasValue)
             {
                 TempData["Error"] = "لا يمكن حذف سجل تم التصرف فيه";
                 return RedirectToAction(nameof(Delete), new { id });
@@ -370,26 +416,6 @@ namespace WarehouseManagement.Controllers
 
             TempData["Success"] = "تم حذف سجل الاستهلاك بنجاح";
             return RedirectToAction(nameof(Index));
-        }
-
-        private async Task<List<InventoryRecordSelectViewModel>> GetAvailableInventoryRecords()
-        {
-            var records = await _context.InventoryRecords
-                .Include(i => i.Material)
-                .Include(i => i.Consumptions)
-                .Where(i => i.ActualQuantity > i.Consumptions.Sum(c => c.ConsumedQuantity))
-                .ToListAsync();
-
-            return records.Select(i => new InventoryRecordSelectViewModel
-            {
-                Id = i.Id,
-                MaterialName = i.Material.Name,
-                MaterialCode = i.Material.Code,
-                AvailableQuantity = i.ActualQuantity - i.Consumptions.Sum(c => c.ConsumedQuantity),
-                TotalCost = i.TotalCost,
-                Department = i.Department,
-                Year = i.Year
-            }).ToList();
         }
     }
 }
